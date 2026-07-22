@@ -175,7 +175,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.4.4</span>
+      <span class="ver" id="verLabel">v1.4.5</span>
     </div>
   </div>
 </header>
@@ -266,7 +266,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-const APP_VERSION='1.4.4';
+const APP_VERSION='1.4.5';
 
 /* storage */
 const DB={
@@ -472,7 +472,10 @@ function renderLog(){
   days.forEach(day=>{
     const head=document.createElement('div'); head.className='weekrow';
     const shk=shakes[day]?' · 🥤':'';
-    head.innerHTML='<span class="wk">'+prettyDate(day)+shk+'</span><span class="muted">'+exercises[day].length+' exercise'+(exercises[day].length>1?'s':'')+'</span>';
+    const cnt=exercises[day].length;
+    const totKg=exercises[day].reduce((s,it)=>s+(it.weight!=null?it.weight:0),0);
+    const kgStr=totKg>0?' · '+(+totKg.toFixed(1))+' kg':'';
+    head.innerHTML='<span class="wk">'+prettyDate(day)+shk+'</span><span class="muted">'+cnt+' exercise'+(cnt>1?'s':'')+kgStr+'</span>';
     el.appendChild(head);
     exercises[day].forEach(it=>{
       const r=document.createElement('div'); r.className='weekrow';
