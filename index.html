@@ -87,7 +87,8 @@
   li.entry:last-child{border-bottom:none}
   li.entry .name{font-weight:700}
   li.entry .w{margin-left:auto;font-weight:900;color:var(--neon2)}
-  li.entry .del{margin-left:6px;background:none;color:var(--muted);border:none;padding:6px;font-size:16px;box-shadow:none}
+  li.entry .acts{display:flex;align-items:center;gap:0}
+  li.entry .del{background:none;color:var(--muted);border:none;padding:6px;font-size:16px;box-shadow:none}
   .empty{color:var(--muted);font-size:14px;padding:14px 0;font-weight:600}
 
   /* shake */
@@ -213,7 +214,7 @@
   .goalw .ghost{padding:8px 14px;font-size:13px;flex:0 0 auto}
 
   /* entry edit button */
-  li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none;margin-left:2px}
+  li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none}
 
   /* nav */
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;border-top:1px solid var(--line);
@@ -241,7 +242,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.8.1</span>
+      <span class="ver" id="verLabel">v1.9.0</span>
     </div>
   </div>
 </header>
@@ -272,6 +273,7 @@
 
     <h2>Log an Exercise</h2>
     <div class="card">
+      <input type="date" id="exDate" style="margin-bottom:10px">
       <input id="exName" placeholder="Exercise — e.g. Bench press" list="exNames">
       <datalist id="exNames"></datalist>
       <div class="row" style="margin-top:10px">
@@ -283,7 +285,7 @@
       <button id="repeatBtn" class="ghost" style="width:100%;margin-top:8px">↻ Repeat last workout</button>
     </div>
 
-    <h2>Today's Exercises</h2>
+    <h2 id="exHeading">Today's Exercises</h2>
     <div class="card"><ul id="exList"></ul></div>
   </section>
 
@@ -339,6 +341,9 @@
     <h2>This Year</h2>
     <div class="card"><div id="statYear"></div></div>
 
+    <h2>Volume Trend</h2>
+    <div class="card"><div id="statTrend"></div></div>
+
     <h2>Milestones</h2>
     <div class="card"><div id="statMilestones"></div></div>
 
@@ -387,7 +392,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.8.1';
+const APP_VERSION='1.9.0';
 
 /* storage */
 const DB={
@@ -490,18 +495,20 @@ function updateExNames(){
 
 function renderExercises(){
   const list=document.getElementById('exList');
-  const items=exercises[todayKey()]||[];
-  if(!items.length){ list.innerHTML='<div class="empty">Nothing logged today.</div>'; return; }
+  const day=logDate();
+  document.getElementById('exHeading').textContent = day===todayKey() ? "Today's Exercises" : prettyDate(day);
+  const items=exercises[day]||[];
+  if(!items.length){ list.innerHTML='<div class="empty">Nothing logged'+(day===todayKey()?' today':'')+'.</div>'; return; }
   list.innerHTML='';
   items.forEach((it,i)=>{
     const isBest = it.weight!=null && it.weight===bestFor(it.name);
     const li=document.createElement('li'); li.className='entry';
-    li.innerHTML='<span class="name link"></span><span class="w"></span><button class="edit" aria-label="edit">✎</button><button class="del" aria-label="delete">✕</button>';
+    li.innerHTML='<span class="name link"></span><span class="w"></span><span class="acts"><button class="edit" aria-label="edit">✎</button><button class="del" aria-label="delete">✕</button></span>';
     li.querySelector('.name').textContent=it.name+(isBest?' 🏆':'');
     li.querySelector('.name').onclick=()=>openExerciseHistory(it.name);
     li.querySelector('.w').textContent=fmtEntry(it);
-    li.querySelector('.edit').onclick=()=>openEdit(todayKey(),i);
-    li.querySelector('.del').onclick=()=>{ items.splice(i,1); if(!items.length)delete exercises[todayKey()]; DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); };
+    li.querySelector('.edit').onclick=()=>openEdit(day,i);
+    li.querySelector('.del').onclick=()=>{ items.splice(i,1); if(!items.length)delete exercises[day]; DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); };
     list.appendChild(li);
   });
 }
@@ -568,7 +575,11 @@ function renderWeeklyGoal(){
 }
 
 const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
-      exSetsEl=document.getElementById('exSets'), exRepsEl=document.getElementById('exReps');
+      exSetsEl=document.getElementById('exSets'), exRepsEl=document.getElementById('exReps'),
+      exDateEl=document.getElementById('exDate');
+exDateEl.value=todayKey(); exDateEl.max=todayKey();
+function logDate(){ return exDateEl.value || todayKey(); }
+exDateEl.addEventListener('change',()=>renderExercises());
 function prefillFromLast(){
   const e=lastEntryFor(exNameEl.value); if(!e) return;
   if(exWeightEl.value==='' && e.weight!=null) exWeightEl.value=e.weight;
@@ -585,7 +596,7 @@ document.getElementById('exAdd').onclick=()=>{
   const sets=exSetsEl.value===''?null:parseInt(exSetsEl.value,10);
   const reps=exRepsEl.value===''?null:parseInt(exRepsEl.value,10);
   const prevBest=bestFor(name);               // best BEFORE this entry
-  const k=todayKey();
+  const k=logDate();
   (exercises[k]=exercises[k]||[]).push({name,weight,sets,reps});
   DB.set('exercises',exercises);
   if(weight!=null && prevBest!=null && weight>prevBest) showToast('🏆 New PR — '+name+' '+weight+' kg');
@@ -596,7 +607,7 @@ exRepsEl.addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementB
 
 /* repeat last workout */
 function repeatLastWorkout(){
-  const today=todayKey();
+  const today=logDate();
   const days=Object.keys(exercises).filter(k=>k<today && exercises[k] && exercises[k].length).sort();
   if(!days.length){ showToast('No previous workout to repeat'); return; }
   const last=days[days.length-1];
@@ -804,8 +815,22 @@ function favoriteExercise(){
   Object.values(exercises).forEach(a=>a.forEach(it=>{ cnt[it.name]=(cnt[it.name]||0)+1; if(cnt[it.name]>bc){bc=cnt[it.name];bn=it.name;} }));
   return bn?{name:bn,count:bc}:null;
 }
+function renderVolumeTrend(){
+  const box=document.getElementById('statTrend');
+  const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
+  if(!days.length){ box.innerHTML='<div class="empty">Log workouts to see your volume trend.</div>'; return; }
+  let mon=mondayOf(new Date(days[0]+'T00:00:00')); const end=mondayOf();
+  const pts=[];
+  while(mon<=end){
+    let v=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d); if(exercises[k]) v+=exercises[k].reduce((s,it)=>s+vol(it),0); }
+    pts.push({label:todayKey(mon), value:Math.round(v)});
+    mon=new Date(mon); mon.setDate(mon.getDate()+7);
+  }
+  box.innerHTML=miniChart(pts.slice(-12)) || '<div class="empty">Not enough data yet.</div>';
+}
 function renderStats(){
   renderWeekSummary();
+  renderVolumeTrend();
   let totVol=0,heaviest=0;
   Object.values(exercises).forEach(a=>a.forEach(it=>{ totVol+=vol(it);
     if(it.weight!=null) heaviest=Math.max(heaviest,it.weight); }));
