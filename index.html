@@ -175,7 +175,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.4.2</span>
+      <span class="ver" id="verLabel">v1.4.3</span>
     </div>
   </div>
 </header>
@@ -245,10 +245,9 @@
     <div class="card"><div id="workoutLog"></div></div>
 
     <h2>Backup</h2>
-    <div class="row" style="gap:8px">
-      <button id="exportBtn" class="ghost" style="flex:1">Export</button>
-      <button id="importBtn" class="ghost" style="flex:1">Import</button>
-      <button id="updateBtn" class="ghost" style="flex:1">Update ↻</button>
+    <div class="row" style="gap:10px">
+      <button id="exportBtn" class="ghost" style="flex:1">Export data</button>
+      <button id="importBtn" class="ghost" style="flex:1">Import data</button>
     </div>
     <input type="file" id="importFile" accept="application/json" hidden>
 
@@ -267,7 +266,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-const APP_VERSION='1.4.2';
+const APP_VERSION='1.4.3';
 
 /* storage */
 const DB={
@@ -520,20 +519,6 @@ document.getElementById('importFile').onchange=e=>{
   };
   r.readAsText(f);
 };
-
-/* manual check for update */
-function checkForUpdate(){
-  showToast('Checking for updates…');
-  if(!('serviceWorker' in navigator)){ location.reload(); return; }
-  navigator.serviceWorker.getRegistration().then(reg=>{
-    if(!reg){ location.reload(); return; }
-    reg.update().finally(()=>{
-      if(reg.waiting) reg.waiting.postMessage('skipWaiting');
-      setTimeout(()=>location.reload(),900);   // network-first SW pulls the freshest build
-    });
-  }).catch(()=>location.reload());
-}
-document.getElementById('updateBtn').onclick=checkForUpdate;
 
 updateExNames(); renderShake(); renderExercises();
 
