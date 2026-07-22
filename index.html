@@ -171,6 +171,12 @@
   .wsum .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:8px}
 
   /* stats page */
+  .pie-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center}
+  .pie{width:150px;height:150px;flex:0 0 auto}
+  .legend{display:flex;flex-direction:column;gap:7px;flex:1;min-width:130px}
+  .lg{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .lg b{margin-left:auto;color:var(--muted)}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block;flex:0 0 auto}
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .stat-tile{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
   .stat-tile .n{font-size:23px;font-weight:900;color:var(--neon2);text-shadow:var(--glow-cy);line-height:1}
@@ -242,7 +248,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.9.0</span>
+      <span class="ver" id="verLabel">v1.10.0</span>
     </div>
   </div>
 </header>
@@ -276,6 +282,7 @@
       <input type="date" id="exDate" style="margin-bottom:10px">
       <input id="exName" placeholder="Exercise — e.g. Bench press" list="exNames">
       <datalist id="exNames"></datalist>
+      <select id="exGroup" style="margin-top:10px"></select>
       <div class="row" style="margin-top:10px">
         <input id="exWeight" type="number" inputmode="decimal" placeholder="kg" step="0.5">
         <input id="exSets" type="number" inputmode="numeric" placeholder="sets" step="1" min="1">
@@ -344,6 +351,9 @@
     <h2>Volume Trend</h2>
     <div class="card"><div id="statTrend"></div></div>
 
+    <h2>Muscle Balance</h2>
+    <div class="card"><div id="statPie"></div></div>
+
     <h2>Milestones</h2>
     <div class="card"><div id="statMilestones"></div></div>
 
@@ -381,6 +391,7 @@
   <div class="modal-card">
     <div class="modal-head"><span>Edit exercise</span><button id="editClose" class="modal-x" aria-label="close">✕</button></div>
     <input id="editName" placeholder="Exercise">
+    <select id="editGroup" style="margin-top:10px"></select>
     <div class="row" style="margin-top:10px">
       <input id="editWeight" type="number" inputmode="decimal" placeholder="kg" step="0.5">
       <input id="editSets" type="number" inputmode="numeric" placeholder="sets" min="1">
@@ -392,7 +403,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.9.0';
+const APP_VERSION='1.10.0';
 
 /* storage */
 const DB={
@@ -431,6 +442,11 @@ function norm(s){ return s.trim().toLowerCase(); }
 /* Dutch numeral formatting: 1.000 / 1.000.000, decimals with comma */
 function fmtNum(n){ return Math.round(n).toLocaleString('nl-NL'); }
 function fmtDec(n){ return Number(n).toLocaleString('nl-NL',{maximumFractionDigits:1}); }
+
+/* muscle groups */
+const GROUPS=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
+const GROUP_COLORS={Chest:'#39ff14',Back:'#00f0ff',Shoulders:'#ff3b6b',Arms:'#ffd23f',Legs:'#b56bff',Core:'#ff8c42',Cardio:'#38bdf8'};
+const GROUP_OPTIONS='<option value="">Muscle group (optional)</option>'+GROUPS.map(g=>'<option>'+g+'</option>').join('');
 
 /* nav */
 document.querySelectorAll('nav button').forEach(b=>{
@@ -519,6 +535,7 @@ function openEdit(day,idx){
   const it=(exercises[day]||[])[idx]; if(!it) return;
   editTarget={day,idx};
   document.getElementById('editName').value=it.name;
+  document.getElementById('editGroup').value=it.group||'';
   document.getElementById('editWeight').value=it.weight!=null?it.weight:'';
   document.getElementById('editSets').value=it.sets!=null?it.sets:'';
   document.getElementById('editReps').value=it.reps!=null?it.reps:'';
@@ -532,6 +549,7 @@ document.getElementById('editSave').onclick=()=>{
   const name=document.getElementById('editName').value.trim(); if(!name){ alert('Exercise name required.'); return; }
   const it=exercises[editTarget.day][editTarget.idx];
   it.name=name;
+  it.group=document.getElementById('editGroup').value||null;
   it.weight=document.getElementById('editWeight').value===''?null:parseFloat(document.getElementById('editWeight').value);
   it.sets=document.getElementById('editSets').value===''?null:parseInt(document.getElementById('editSets').value,10);
   it.reps=document.getElementById('editReps').value===''?null:parseInt(document.getElementById('editReps').value,10);
@@ -576,8 +594,10 @@ function renderWeeklyGoal(){
 
 const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
       exSetsEl=document.getElementById('exSets'), exRepsEl=document.getElementById('exReps'),
-      exDateEl=document.getElementById('exDate');
+      exDateEl=document.getElementById('exDate'), exGroupEl=document.getElementById('exGroup');
 exDateEl.value=todayKey(); exDateEl.max=todayKey();
+document.getElementById('exGroup').innerHTML=GROUP_OPTIONS;
+document.getElementById('editGroup').innerHTML=GROUP_OPTIONS;
 function logDate(){ return exDateEl.value || todayKey(); }
 exDateEl.addEventListener('change',()=>renderExercises());
 function prefillFromLast(){
@@ -585,6 +605,7 @@ function prefillFromLast(){
   if(exWeightEl.value==='' && e.weight!=null) exWeightEl.value=e.weight;
   if(exSetsEl.value==='' && e.sets!=null) exSetsEl.value=e.sets;
   if(exRepsEl.value==='' && e.reps!=null) exRepsEl.value=e.reps;
+  if(exGroupEl.value==='' && e.group) exGroupEl.value=e.group;
 }
 exNameEl.addEventListener('change',prefillFromLast);
 exNameEl.addEventListener('input',()=>{ const names=new Set(); Object.values(exercises).forEach(a=>a.forEach(it=>names.add(norm(it.name)))); if(names.has(norm(exNameEl.value))) prefillFromLast(); });
@@ -595,12 +616,13 @@ document.getElementById('exAdd').onclick=()=>{
   const weight=exWeightEl.value===''?null:parseFloat(exWeightEl.value);
   const sets=exSetsEl.value===''?null:parseInt(exSetsEl.value,10);
   const reps=exRepsEl.value===''?null:parseInt(exRepsEl.value,10);
+  const group=exGroupEl.value||null;
   const prevBest=bestFor(name);               // best BEFORE this entry
   const k=logDate();
-  (exercises[k]=exercises[k]||[]).push({name,weight,sets,reps});
+  (exercises[k]=exercises[k]||[]).push({name,weight,sets,reps,group});
   DB.set('exercises',exercises);
   if(weight!=null && prevBest!=null && weight>prevBest) showToast('🏆 New PR — '+name+' '+weight+' kg');
-  exNameEl.value=''; exWeightEl.value=''; exSetsEl.value=''; exRepsEl.value=''; exNameEl.focus();
+  exNameEl.value=''; exWeightEl.value=''; exSetsEl.value=''; exRepsEl.value=''; exGroupEl.value=''; exNameEl.focus();
   updateExNames(); renderExercises(); renderWeeklyGoal();
 };
 exRepsEl.addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('exAdd').click(); });
@@ -611,7 +633,7 @@ function repeatLastWorkout(){
   const days=Object.keys(exercises).filter(k=>k<today && exercises[k] && exercises[k].length).sort();
   if(!days.length){ showToast('No previous workout to repeat'); return; }
   const last=days[days.length-1];
-  const copy=exercises[last].map(it=>({name:it.name,weight:it.weight,sets:it.sets,reps:it.reps}));
+  const copy=exercises[last].map(it=>({name:it.name,weight:it.weight,sets:it.sets,reps:it.reps,group:it.group}));
   if(!confirm('Copy '+copy.length+' exercise'+(copy.length>1?'s':'')+' from '+prettyDate(last)+' into today?')) return;
   exercises[today]=(exercises[today]||[]).concat(copy);
   DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal();
@@ -828,9 +850,25 @@ function renderVolumeTrend(){
   }
   box.innerHTML=miniChart(pts.slice(-12)) || '<div class="empty">Not enough data yet.</div>';
 }
+function renderMusclePie(){
+  const box=document.getElementById('statPie');
+  const counts={}; let total=0;
+  Object.values(exercises).forEach(a=>a.forEach(it=>{ if(!it.group) return; counts[it.group]=(counts[it.group]||0)+1; total++; }));
+  if(!total){ box.innerHTML='<div class="empty">Tag exercises with a muscle group to see your breakdown.</div>'; return; }
+  const order=GROUPS.filter(g=>counts[g]);
+  const C=2*Math.PI*54; let acc=0, circles='';
+  order.forEach(g=>{ const len=C*(counts[g]/total);
+    circles+='<circle cx="75" cy="75" r="54" fill="none" stroke="'+GROUP_COLORS[g]+'" stroke-width="22" '
+      +'stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-acc).toFixed(2)+'" transform="rotate(-90 75 75)"/>';
+    acc+=len; });
+  const svg='<svg viewBox="0 0 150 150" class="pie">'+circles+'</svg>';
+  const legend='<div class="legend">'+order.map(g=>'<div class="lg"><span class="dot" style="background:'+GROUP_COLORS[g]+'"></span>'+g+' <b>'+Math.round(counts[g]/total*100)+'%</b></div>').join('')+'</div>';
+  box.innerHTML='<div class="pie-wrap">'+svg+legend+'</div>';
+}
 function renderStats(){
   renderWeekSummary();
   renderVolumeTrend();
+  renderMusclePie();
   let totVol=0,heaviest=0;
   Object.values(exercises).forEach(a=>a.forEach(it=>{ totVol+=vol(it);
     if(it.weight!=null) heaviest=Math.max(heaviest,it.weight); }));
