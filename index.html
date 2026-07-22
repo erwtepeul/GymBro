@@ -178,6 +178,31 @@
   .modal-x{background:none;color:var(--muted);box-shadow:none;padding:6px;font-size:18px}
   .link{cursor:pointer}
 
+  /* backup reminder banner */
+  .banner{display:flex;align-items:center;gap:10px;margin-top:6px;
+    background:rgba(0,240,255,.08);border:1px solid var(--neon2);border-radius:14px;padding:11px 12px 11px 14px}
+  .banner[hidden]{display:none}
+  .banner span{flex:1;font-weight:800;font-size:14px;color:var(--neon2)}
+  .banner-btn{background:var(--neon2);color:#04120a;padding:9px 16px;font-size:13px;box-shadow:var(--glow-cy)}
+  .banner-x{background:none;color:var(--muted);padding:6px;box-shadow:none;font-size:14px}
+
+  /* weekly goal ring */
+  .goalw{display:flex;align-items:center;gap:16px}
+  .goalw .ring{width:72px;height:72px;flex:0 0 auto}
+  .goalw .rbg{fill:none;stroke:var(--line);stroke-width:9}
+  .goalw .rfg{fill:none;stroke:var(--neon);stroke-width:9;stroke-linecap:round;
+    transform:rotate(-90deg);transform-origin:50% 50%;filter:drop-shadow(0 0 4px rgba(57,255,20,.6));transition:stroke-dashoffset .4s}
+  .goalw .rtxt{fill:var(--ink);font-size:22px;font-weight:900}
+  .goalw-info{flex:1}
+  .goalw-count{font-size:20px;font-weight:900;color:var(--ink)}
+  .goalw-count b{color:var(--neon)}
+  .goalw-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:2px}
+  .goalw-streak{font-size:12px;font-weight:800;color:var(--neon2);margin-top:6px;text-transform:uppercase;letter-spacing:1px;min-height:15px}
+  .goalw .ghost{padding:8px 14px;font-size:13px;flex:0 0 auto}
+
+  /* entry edit button */
+  li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none;margin-left:2px}
+
   /* nav */
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;border-top:1px solid var(--line);
     background:rgba(10,10,15,.92);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom)}
@@ -204,7 +229,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.5.3</span>
+      <span class="ver" id="verLabel">v1.6.0</span>
     </div>
   </div>
 </header>
@@ -212,7 +237,13 @@
 <main>
   <!-- TODAY -->
   <section class="view active" id="view-today">
-    <div class="card" style="margin-top:24px">
+    <div id="backupBanner" class="banner" hidden>
+      <span>⏰ Time to back up your data</span>
+      <button id="backupGo" class="banner-btn">Export</button>
+      <button id="backupX" class="banner-x" aria-label="dismiss">✕</button>
+    </div>
+
+    <div class="card" style="margin-top:16px">
       <div class="shake" id="shakeBox">
         <div class="glass">🥤</div>
         <div class="label" id="shakeLabel">Not logged yet</div>
@@ -223,6 +254,9 @@
         </div>
       </div>
     </div>
+
+    <h2>Weekly Goal</h2>
+    <div class="card"><div class="goalw" id="goalwBox"></div></div>
 
     <h2>Log an Exercise</h2>
     <div class="card">
@@ -312,8 +346,22 @@
   </div>
 </div>
 
+<div id="editModal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>Edit exercise</span><button id="editClose" class="modal-x" aria-label="close">✕</button></div>
+    <input id="editName" placeholder="Exercise">
+    <div class="row" style="margin-top:10px">
+      <input id="editWeight" type="number" inputmode="decimal" placeholder="kg" step="0.5">
+      <input id="editSets" type="number" inputmode="numeric" placeholder="sets" min="1">
+      <input id="editReps" type="number" inputmode="numeric" placeholder="reps" min="1">
+    </div>
+    <button id="editSave" style="width:100%;margin-top:12px">Save changes</button>
+    <button id="editDelete" class="danger-btn" style="margin-top:8px">Delete</button>
+  </div>
+</div>
+
 <script>
-const APP_VERSION='1.5.3';
+const APP_VERSION='1.6.0';
 
 /* storage */
 const DB={
@@ -340,6 +388,7 @@ let exercises=DB.get('exercises',{});
 let weights=DB.get('weights',{});
 let shakes=DB.get('shakes',{});
 let goal=DB.get('goal',75);                  // goal weight in kg
+let weeklyGoal=DB.get('weeklyGoal',3);       // workouts-per-week target
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 document.getElementById('verLabel').textContent='v'+APP_VERSION;
@@ -395,6 +444,8 @@ function bestFor(name){ let m=null; Object.values(exercises).forEach(arr=>arr.fo
 function lastEntryFor(name){ let e=null; Object.keys(exercises).sort().forEach(day=>exercises[day].forEach(it=>{ if(norm(it.name)===norm(name)) e=it; })); return e; }
 /* training volume of a single entry = weight × reps × sets (legacy weight-only = weight) */
 function vol(it){ return (it.weight!=null?it.weight:0)*(it.reps||1)*(it.sets||1); }
+/* estimated 1-rep max (Epley) */
+function e1rm(it){ if(it.weight==null) return null; return it.weight*(1+(it.reps||1)/30); }
 /* display string for an entry, e.g. "3×5 · 60 kg" */
 function fmtEntry(it){
   const w = it.weight!=null ? it.weight+' kg' : '';
@@ -415,13 +466,75 @@ function renderExercises(){
   items.forEach((it,i)=>{
     const isBest = it.weight!=null && it.weight===bestFor(it.name);
     const li=document.createElement('li'); li.className='entry';
-    li.innerHTML='<span class="name link"></span><span class="w"></span><button class="del" aria-label="delete">✕</button>';
+    li.innerHTML='<span class="name link"></span><span class="w"></span><button class="edit" aria-label="edit">✎</button><button class="del" aria-label="delete">✕</button>';
     li.querySelector('.name').textContent=it.name+(isBest?' 🏆':'');
     li.querySelector('.name').onclick=()=>openExerciseHistory(it.name);
     li.querySelector('.w').textContent=fmtEntry(it);
-    li.querySelector('.del').onclick=()=>{ items.splice(i,1); if(!items.length)delete exercises[todayKey()]; DB.set('exercises',exercises); updateExNames(); renderExercises(); };
+    li.querySelector('.edit').onclick=()=>openEdit(todayKey(),i);
+    li.querySelector('.del').onclick=()=>{ items.splice(i,1); if(!items.length)delete exercises[todayKey()]; DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); };
     list.appendChild(li);
   });
+}
+
+/* edit an entry */
+let editTarget=null;
+function openEdit(day,idx){
+  const it=(exercises[day]||[])[idx]; if(!it) return;
+  editTarget={day,idx};
+  document.getElementById('editName').value=it.name;
+  document.getElementById('editWeight').value=it.weight!=null?it.weight:'';
+  document.getElementById('editSets').value=it.sets!=null?it.sets:'';
+  document.getElementById('editReps').value=it.reps!=null?it.reps:'';
+  document.getElementById('editModal').hidden=false;
+}
+function closeEdit(){ document.getElementById('editModal').hidden=true; editTarget=null; }
+document.getElementById('editClose').onclick=closeEdit;
+document.getElementById('editModal').onclick=e=>{ if(e.target.id==='editModal') closeEdit(); };
+document.getElementById('editSave').onclick=()=>{
+  if(!editTarget) return;
+  const name=document.getElementById('editName').value.trim(); if(!name){ alert('Exercise name required.'); return; }
+  const it=exercises[editTarget.day][editTarget.idx];
+  it.name=name;
+  it.weight=document.getElementById('editWeight').value===''?null:parseFloat(document.getElementById('editWeight').value);
+  it.sets=document.getElementById('editSets').value===''?null:parseInt(document.getElementById('editSets').value,10);
+  it.reps=document.getElementById('editReps').value===''?null:parseInt(document.getElementById('editReps').value,10);
+  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderWeeklyGoal(); showToast('Saved ✓');
+};
+document.getElementById('editDelete').onclick=()=>{
+  if(!editTarget) return;
+  exercises[editTarget.day].splice(editTarget.idx,1);
+  if(!exercises[editTarget.day].length) delete exercises[editTarget.day];
+  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderWeeklyGoal(); showToast('Deleted');
+};
+
+/* weekly workout goal */
+function workoutsInWeek(refMon){ let c=0; for(let i=0;i<7;i++){ const d=new Date(refMon); d.setDate(refMon.getDate()+i); const k=todayKey(d); if(exercises[k]&&exercises[k].length) c++; } return c; }
+function weeklyStreak(){
+  let streak=0; const mon=mondayOf();
+  if(workoutsInWeek(mon)>=weeklyGoal) streak++;
+  const prev=new Date(mon); prev.setDate(prev.getDate()-7);
+  while(workoutsInWeek(prev)>=weeklyGoal){ streak++; prev.setDate(prev.getDate()-7); }
+  return streak;
+}
+function renderWeeklyGoal(){
+  const box=document.getElementById('goalwBox');
+  const done=workoutsInWeek(mondayOf());
+  const pct=Math.max(0,Math.min(1, weeklyGoal>0?done/weeklyGoal:0));
+  const r=28, c=2*Math.PI*r, off=c*(1-pct), streak=weeklyStreak();
+  const ring='<svg class="ring" viewBox="0 0 72 72">'
+    +'<circle class="rbg" cx="36" cy="36" r="'+r+'"/>'
+    +'<circle class="rfg" cx="36" cy="36" r="'+r+'" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'
+    +'<text class="rtxt" x="36" y="43" text-anchor="middle">'+done+'</text></svg>';
+  const info='<div class="goalw-info"><div class="goalw-count"><b>'+done+'</b> / '+weeklyGoal+'</div>'
+    +'<div class="goalw-sub">workouts this week</div>'
+    +'<div class="goalw-streak">'+(streak>0?'🔥 '+streak+'-week streak':'')+'</div></div>';
+  box.innerHTML=ring+info+'<button id="wgoalEdit" class="ghost">Change</button>';
+  document.getElementById('wgoalEdit').onclick=()=>{
+    const v=prompt('Workouts-per-week goal:', weeklyGoal);
+    if(v==null) return; const n=parseInt(v,10);
+    if(isNaN(n)||n<1){ alert('Enter a whole number of 1 or more.'); return; }
+    weeklyGoal=n; DB.set('weeklyGoal',weeklyGoal); renderWeeklyGoal(); showToast('Weekly goal: '+n+'×');
+  };
 }
 
 const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
@@ -447,7 +560,7 @@ document.getElementById('exAdd').onclick=()=>{
   DB.set('exercises',exercises);
   if(weight!=null && prevBest!=null && weight>prevBest) showToast('🏆 New PR — '+name+' '+weight+' kg');
   exNameEl.value=''; exWeightEl.value=''; exSetsEl.value=''; exRepsEl.value=''; exNameEl.focus();
-  updateExNames(); renderExercises();
+  updateExNames(); renderExercises(); renderWeeklyGoal();
 };
 exRepsEl.addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('exAdd').click(); });
 
@@ -460,7 +573,7 @@ function repeatLastWorkout(){
   const copy=exercises[last].map(it=>({name:it.name,weight:it.weight,sets:it.sets,reps:it.reps}));
   if(!confirm('Copy '+copy.length+' exercise'+(copy.length>1?'s':'')+' from '+prettyDate(last)+' into today?')) return;
   exercises[today]=(exercises[today]||[]).concat(copy);
-  DB.set('exercises',exercises); updateExNames(); renderExercises();
+  DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal();
   showToast('Repeated '+prettyDate(last)+' ✓');
 }
 document.getElementById('repeatBtn').onclick=repeatLastWorkout;
@@ -495,10 +608,24 @@ function openExerciseHistory(name){
   else{
     const withW=points.filter(p=>p.w!=null);
     const best=withW.length?Math.max(...withW.map(p=>p.w)):null;
-    const bestLine=best!=null?'<div class="hint" style="margin:0 0 12px">🏆 Best: '+best+' kg · '+points.length+' session'+(points.length>1?'s':'')+'</div>':'';
+    // estimated 1RM across every set ever logged for this exercise
+    let best1=0;
+    days.forEach(k=>exercises[k].forEach(it=>{ if(norm(it.name)===norm(name)){ const e=e1rm(it); if(e!=null && e>best1) best1=e; } }));
+    const statLine=best!=null
+      ? '<div class="hint" style="margin:0 0 6px">🏆 Best '+best+' kg · Est. 1RM '+Math.round(best1)+' kg · '+points.length+' session'+(points.length>1?'s':'')+'</div>'
+      : '';
+    // "beat last time" suggestion from the most recent session's top set
+    let suggestion='';
+    const lastK=points[points.length-1].k;
+    const lastSets=exercises[lastK].filter(it=>norm(it.name)===norm(name) && it.weight!=null);
+    if(lastSets.length){
+      const top=lastSets.reduce((a,b)=> (e1rm(b)>e1rm(a)?b:a));
+      const nextW=+(top.weight+2.5).toFixed(1);
+      suggestion='<div class="hint" style="margin:0 0 12px;color:var(--neon2)">⤴ Beat last time: try '+nextW+' kg'+(top.reps?(' × '+top.reps):'')+'</div>';
+    }
     const chart=withW.length?miniChart(withW.map(p=>({label:p.k,value:p.w}))):'';
     const rows=points.slice().reverse().map(p=>'<div class="weekrow"><span class="muted">'+prettyDate(p.k)+'</span><span class="kg">'+(p.w!=null?p.w+' kg':'—')+'</span></div>').join('');
-    body.innerHTML=bestLine+chart+rows;
+    body.innerHTML=statLine+suggestion+chart+rows;
   }
   document.getElementById('exModal').hidden=false;
 }
@@ -641,19 +768,31 @@ function renderLog(){
 document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Reset all data? This erases every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
-  exercises={}; weights={}; shakes={}; goal=75; DB.set('goal',goal);
-  updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog();
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal);
+  updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  DB.set('lastExport',Date.now()); updateBackupBanner(); showToast('Backup downloaded ✓');
 }
 document.getElementById('exportBtn').onclick=exportData;
+
+/* weekly backup reminder */
+function daysSince(ts){ return ts ? (Date.now()-ts)/86400000 : Infinity; }
+function updateBackupBanner(){
+  const b=document.getElementById('backupBanner');
+  const hasData=Object.keys(exercises).length>0 || Object.keys(weights).length>0;
+  const last=Math.max(DB.get('lastExport',0)||0, DB.get('backupSnooze',0)||0);
+  b.hidden = !(hasData && daysSince(last)>=7);
+}
+document.getElementById('backupGo').onclick=exportData;
+document.getElementById('backupX').onclick=()=>{ DB.set('backupSnooze',Date.now()); updateBackupBanner(); };
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
@@ -667,8 +806,9 @@ document.getElementById('importFile').onchange=e=>{
       weights=(d.weights&&typeof d.weights==='object')?d.weights:{};
       shakes=(d.shakes&&typeof d.shakes==='object')?d.shakes:{};
       if(typeof d.goal==='number' && d.goal>0) goal=d.goal;
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal);
-      updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog();
+      if(typeof d.weeklyGoal==='number' && d.weeklyGoal>0) weeklyGoal=d.weeklyGoal;
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal);
+      updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
       showToast('Backup imported ✓');
     }catch(err){ alert('Could not read that backup file.'); }
     e.target.value='';
@@ -676,7 +816,7 @@ document.getElementById('importFile').onchange=e=>{
   r.readAsText(f);
 };
 
-updateExNames(); renderShake(); renderExercises();
+updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner();
 
 /* service worker + auto-update */
 if('serviceWorker' in navigator){
