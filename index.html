@@ -43,7 +43,7 @@
     text-shadow:var(--glow);
   }
   .wordmark b{color:var(--neon2);text-shadow:var(--glow-cy)}
-  .ver{align-self:flex-end;margin-bottom:3px;font-size:8px;font-weight:700;letter-spacing:.5px;
+  .ver{align-self:flex-end;margin-bottom:8px;font-size:8px;font-weight:700;letter-spacing:.5px;
     color:var(--muted);text-transform:uppercase}
 
   main{flex:1 1 auto; overflow-y:auto; padding:8px 18px 22px; -webkit-overflow-scrolling:touch}
@@ -204,7 +204,7 @@
 </nav>
 
 <script>
-const APP_VERSION='1.2.0';
+const APP_VERSION='1.2.1';
 
 /* storage */
 const DB={
@@ -213,7 +213,7 @@ const DB={
 };
 
 /* dates */
-function todayKey(d=new Date()){ return d.toISOString().slice(0,10); }
+function todayKey(d=new Date()){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; }
 function mondayOf(d=new Date()){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
 function mondayKey(d=new Date()){ return todayKey(mondayOf(d)); }
 function prettyDate(k){ return new Date(k+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}); }
