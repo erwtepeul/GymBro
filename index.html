@@ -109,6 +109,10 @@
   .delta{font-size:12px;font-weight:800;margin-left:8px}
   .delta.up{color:var(--danger)}.delta.down{color:var(--neon)}
 
+  .danger-btn{margin-top:22px;width:100%;background:transparent;color:var(--danger);
+    border:2px solid var(--danger);box-shadow:none}
+  .danger-btn:active{background:var(--danger);color:#fff}
+
   /* nav */
   nav{flex:0 0 auto;display:flex;border-top:1px solid var(--line);
     background:rgba(10,10,15,.9);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom)}
@@ -135,7 +139,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.2.2</span>
+      <span class="ver" id="verLabel">v1.2.3</span>
     </div>
   </div>
 </header>
@@ -194,6 +198,8 @@
   <section class="view" id="view-log">
     <h2>Workout Log</h2>
     <div class="card"><div id="workoutLog"></div></div>
+
+    <button id="resetBtn" class="danger-btn">Reset all data</button>
   </section>
 </main>
 
@@ -207,7 +213,7 @@
 </nav>
 
 <script>
-const APP_VERSION='1.2.2';
+const APP_VERSION='1.2.3';
 
 /* storage */
 const DB={
@@ -330,6 +336,14 @@ function renderLog(){
     });
   });
 }
+
+/* reset all data */
+document.getElementById('resetBtn').onclick=()=>{
+  if(!confirm('Reset all data? This erases every weigh-in, exercise, and shake. This cannot be undone.')) return;
+  Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
+  exercises={}; weights={}; shakes={};
+  renderShake(); renderExercises(); renderWeight(); renderLog();
+};
 
 renderShake(); renderExercises();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
