@@ -165,6 +165,9 @@
   .sum-row .stat b{font-weight:900;color:var(--neon)}
   .sum-row.life .per{color:var(--neon2)}
   .sum-row.life .stat b{color:var(--neon2)}
+  .wsum{display:flex;justify-content:space-around;text-align:center;gap:8px}
+  .wsum .val{font-size:32px;font-weight:900;color:var(--neon);text-shadow:var(--glow);line-height:1}
+  .wsum .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:8px}
 
   /* stats page */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -238,7 +241,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.7.1</span>
+      <span class="ver" id="verLabel">v1.7.2</span>
     </div>
   </div>
 </header>
@@ -336,7 +339,7 @@
 
   <!-- STATS -->
   <section class="view" id="view-stats">
-    <h2>Summary</h2>
+    <h2>This Week</h2>
     <div class="card"><div id="statSummary"></div></div>
 
     <h2>Milestones</h2>
@@ -378,7 +381,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.7.1';
+const APP_VERSION='1.7.2';
 
 /* storage */
 const DB={
@@ -748,17 +751,14 @@ function periodStats(pred){
 }
 function renderWeekSummary(){
   const box=document.getElementById('statSummary');
-  const now=new Date();
   const mon=mondayOf(); const sun=new Date(mon); sun.setDate(mon.getDate()+6);
   const wStart=todayKey(mon), wEnd=todayKey(sun);
-  const ym=todayKey(now).slice(0,7), yr=String(now.getFullYear());
-  const week =periodStats(k=>k>=wStart&&k<=wEnd);
-  const month=periodStats(k=>k.slice(0,7)===ym);
-  const year =periodStats(k=>k.slice(0,4)===yr);
-  const life =periodStats(()=>true);
-  const row=(label,st,cls)=>'<div class="sum-row'+(cls?' '+cls:'')+'"><span class="per">'+label+'</span>'
-    +'<span class="stat"><b>'+st.workouts+'</b> workout'+(st.workouts===1?'':'s')+' · <b>'+fmtNum(st.volume)+'</b> kg</span></div>';
-  box.innerHTML=row('This Week',week)+row('This Month',month)+row('This Year',year)+row('Lifetime',life,'life');
+  const week=periodStats(k=>k>=wStart&&k<=wEnd);
+  let shakeDays=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); if(shakes[todayKey(d)]) shakeDays++; }
+  box.innerHTML='<div class="wsum">'
+    +'<div><div class="val">'+fmtNum(week.workouts)+'</div><div class="lbl">Workouts</div></div>'
+    +'<div><div class="val">'+fmtNum(week.volume)+'</div><div class="lbl">kg Volume</div></div>'
+    +'<div><div class="val">'+fmtNum(shakeDays)+'</div><div class="lbl">Shakes</div></div></div>';
 }
 
 /* stats page helpers */
