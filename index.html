@@ -149,6 +149,30 @@
     border:2px solid var(--danger);box-shadow:none}
   .danger-btn:active{background:var(--danger);color:#fff}
 
+  /* goal */
+  .goal-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;
+    padding-top:14px;border-top:1px solid var(--line)}
+  .goal-row span{font-weight:800;font-size:14px;color:var(--ink)}
+  .goal-row b{color:var(--neon2)}
+  .goal-row .ghost{padding:8px 14px;font-size:13px}
+  .cgoal{stroke:var(--neon2);stroke-width:1.5;stroke-dasharray:5 4;opacity:.9}
+
+  /* week summary */
+  .wsum{display:flex;justify-content:space-around;text-align:center;gap:8px}
+  .wsum .val{font-size:26px;font-weight:900;color:var(--neon);text-shadow:var(--glow);line-height:1}
+  .wsum .lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
+
+  /* exercise-history modal */
+  .modal{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;justify-content:center;
+    background:rgba(0,0,0,.6);backdrop-filter:blur(3px)}
+  .modal-card{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+    width:100%;max-width:520px;max-height:82vh;overflow-y:auto;
+    padding:20px 20px calc(24px + env(safe-area-inset-bottom))}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .modal-head span{font-weight:900;font-size:18px;color:var(--neon);text-transform:uppercase;letter-spacing:.5px}
+  .modal-x{background:none;color:var(--muted);box-shadow:none;padding:6px;font-size:18px}
+  .link{cursor:pointer}
+
   /* nav */
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;border-top:1px solid var(--line);
     background:rgba(10,10,15,.92);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom)}
@@ -175,7 +199,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.4.5</span>
+      <span class="ver" id="verLabel">v1.5.0</span>
     </div>
   </div>
 </header>
@@ -200,10 +224,12 @@
       <input id="exName" placeholder="Exercise — e.g. Bench press" autocomplete="off" list="exNames">
       <datalist id="exNames"></datalist>
       <div class="row" style="margin-top:10px">
-        <input id="exWeight" type="number" inputmode="decimal" placeholder="Weight" step="0.5">
-        <span class="unit">kg</span>
-        <button id="exAdd">Add</button>
+        <input id="exWeight" type="number" inputmode="decimal" placeholder="kg" step="0.5">
+        <input id="exSets" type="number" inputmode="numeric" placeholder="sets" step="1" min="1">
+        <input id="exReps" type="number" inputmode="numeric" placeholder="reps" step="1" min="1">
       </div>
+      <button id="exAdd" style="width:100%;margin-top:10px">Add exercise</button>
+      <button id="repeatBtn" class="ghost" style="width:100%;margin-top:8px">↻ Repeat last workout</button>
     </div>
 
     <h2>Today's Exercises</h2>
@@ -230,7 +256,13 @@
     </div>
 
     <h2>Trend</h2>
-    <div class="card"><div id="weightChart"></div></div>
+    <div class="card">
+      <div id="weightChart"></div>
+      <div class="goal-row">
+        <span>🎯 Goal <b id="goalVal">75</b> kg</span>
+        <button id="goalEdit" class="ghost">Change</button>
+      </div>
+    </div>
 
     <h2>History</h2>
     <div class="card"><div id="weightHistory"></div></div>
@@ -238,6 +270,9 @@
 
   <!-- LOG -->
   <section class="view" id="view-log">
+    <h2>This Week</h2>
+    <div class="card"><div id="weekSummary"></div></div>
+
     <h2>Calendar</h2>
     <div class="card"><div id="logCalendar"></div></div>
 
@@ -265,8 +300,15 @@
 </nav>
 <div id="toast" class="toast"></div>
 
+<div id="exModal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span id="exModalTitle"></span><button id="exModalClose" class="modal-x" aria-label="close">✕</button></div>
+    <div id="exModalBody"></div>
+  </div>
+</div>
+
 <script>
-const APP_VERSION='1.4.5';
+const APP_VERSION='1.5.0';
 
 /* storage */
 const DB={
@@ -292,6 +334,7 @@ if(localStorage.getItem('gymbro_reset')!==RESET_TOKEN){
 let exercises=DB.get('exercises',{});
 let weights=DB.get('weights',{});
 let shakes=DB.get('shakes',{});
+let goal=DB.get('goal',75);                  // goal weight in kg
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 document.getElementById('verLabel').textContent='v'+APP_VERSION;
@@ -343,8 +386,16 @@ document.getElementById('shakeBtn').onclick=()=>{ const k=todayKey(); if(shakes[
 /* exercises */
 /* all-time best weight for an exercise (across all days) */
 function bestFor(name){ let m=null; Object.values(exercises).forEach(arr=>arr.forEach(it=>{ if(it.weight!=null && norm(it.name)===norm(name)) m=(m==null)?it.weight:Math.max(m,it.weight); })); return m; }
-/* most recent logged weight for an exercise */
-function lastWeightFor(name){ let w=null; Object.keys(exercises).sort().forEach(day=>exercises[day].forEach(it=>{ if(it.weight!=null && norm(it.name)===norm(name)) w=it.weight; })); return w; }
+/* most recent logged entry for an exercise (for weight/sets/reps recall) */
+function lastEntryFor(name){ let e=null; Object.keys(exercises).sort().forEach(day=>exercises[day].forEach(it=>{ if(norm(it.name)===norm(name)) e=it; })); return e; }
+/* training volume of a single entry = weight × reps × sets (legacy weight-only = weight) */
+function vol(it){ return (it.weight!=null?it.weight:0)*(it.reps||1)*(it.sets||1); }
+/* display string for an entry, e.g. "3×5 · 60 kg" */
+function fmtEntry(it){
+  const w = it.weight!=null ? it.weight+' kg' : '';
+  const sr = (it.sets||it.reps) ? ((it.sets||1)+'×'+(it.reps||1)) : '';
+  return [sr,w].filter(Boolean).join(' · ') || '—';
+}
 /* rebuild the autocomplete list of past exercise names */
 function updateExNames(){
   const set=new Set(); Object.values(exercises).forEach(arr=>arr.forEach(it=>set.add(it.name)));
@@ -359,33 +410,95 @@ function renderExercises(){
   items.forEach((it,i)=>{
     const isBest = it.weight!=null && it.weight===bestFor(it.name);
     const li=document.createElement('li'); li.className='entry';
-    li.innerHTML='<span class="name"></span><span class="w"></span><button class="del" aria-label="delete">✕</button>';
+    li.innerHTML='<span class="name link"></span><span class="w"></span><button class="del" aria-label="delete">✕</button>';
     li.querySelector('.name').textContent=it.name+(isBest?' 🏆':'');
-    li.querySelector('.w').textContent=(it.weight!=null)?it.weight+' kg':'';
+    li.querySelector('.name').onclick=()=>openExerciseHistory(it.name);
+    li.querySelector('.w').textContent=fmtEntry(it);
     li.querySelector('.del').onclick=()=>{ items.splice(i,1); if(!items.length)delete exercises[todayKey()]; DB.set('exercises',exercises); updateExNames(); renderExercises(); };
     list.appendChild(li);
   });
 }
 
-const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight');
-function prefillWeight(){ const w=lastWeightFor(exNameEl.value); if(w!=null && exWeightEl.value===''){ exWeightEl.value=w; } }
-exNameEl.addEventListener('change',prefillWeight);
-exNameEl.addEventListener('input',()=>{ const names=new Set(); Object.values(exercises).forEach(a=>a.forEach(it=>names.add(norm(it.name)))); if(names.has(norm(exNameEl.value))) prefillWeight(); });
+const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
+      exSetsEl=document.getElementById('exSets'), exRepsEl=document.getElementById('exReps');
+function prefillFromLast(){
+  const e=lastEntryFor(exNameEl.value); if(!e) return;
+  if(exWeightEl.value==='' && e.weight!=null) exWeightEl.value=e.weight;
+  if(exSetsEl.value==='' && e.sets!=null) exSetsEl.value=e.sets;
+  if(exRepsEl.value==='' && e.reps!=null) exRepsEl.value=e.reps;
+}
+exNameEl.addEventListener('change',prefillFromLast);
+exNameEl.addEventListener('input',()=>{ const names=new Set(); Object.values(exercises).forEach(a=>a.forEach(it=>names.add(norm(it.name)))); if(names.has(norm(exNameEl.value))) prefillFromLast(); });
 
 document.getElementById('exAdd').onclick=()=>{
   const name=exNameEl.value.trim();
-  const wv=exWeightEl.value;
   if(!name)return;
-  const weight=wv===''?null:parseFloat(wv);
+  const weight=exWeightEl.value===''?null:parseFloat(exWeightEl.value);
+  const sets=exSetsEl.value===''?null:parseInt(exSetsEl.value,10);
+  const reps=exRepsEl.value===''?null:parseInt(exRepsEl.value,10);
   const prevBest=bestFor(name);               // best BEFORE this entry
   const k=todayKey();
-  (exercises[k]=exercises[k]||[]).push({name,weight});
+  (exercises[k]=exercises[k]||[]).push({name,weight,sets,reps});
   DB.set('exercises',exercises);
   if(weight!=null && prevBest!=null && weight>prevBest) showToast('🏆 New PR — '+name+' '+weight+' kg');
-  exNameEl.value=''; exWeightEl.value=''; exNameEl.focus();
+  exNameEl.value=''; exWeightEl.value=''; exSetsEl.value=''; exRepsEl.value=''; exNameEl.focus();
   updateExNames(); renderExercises();
 };
-exWeightEl.addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('exAdd').click(); });
+exRepsEl.addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('exAdd').click(); });
+
+/* repeat last workout */
+function repeatLastWorkout(){
+  const today=todayKey();
+  const days=Object.keys(exercises).filter(k=>k<today && exercises[k] && exercises[k].length).sort();
+  if(!days.length){ showToast('No previous workout to repeat'); return; }
+  const last=days[days.length-1];
+  const copy=exercises[last].map(it=>({name:it.name,weight:it.weight,sets:it.sets,reps:it.reps}));
+  if(!confirm('Copy '+copy.length+' exercise'+(copy.length>1?'s':'')+' from '+prettyDate(last)+' into today?')) return;
+  exercises[today]=(exercises[today]||[]).concat(copy);
+  DB.set('exercises',exercises); updateExNames(); renderExercises();
+  showToast('Repeated '+prettyDate(last)+' ✓');
+}
+document.getElementById('repeatBtn').onclick=repeatLastWorkout;
+
+/* exercise history modal */
+function miniChart(points){
+  if(!points.length) return '';
+  const vals=points.map(p=>p.value);
+  const dMin=Math.min(...vals), dMax=Math.max(...vals), center=(dMin+dMax)/2;
+  const range=Math.max(2,(dMax-dMin)*1.3);
+  const yMax=+(center+range/2).toFixed(1), yMin=+(center-range/2).toFixed(1);
+  const W=300,H=140,padL=30,padR=10,padT=12,padB=22, pw=W-padL-padR, ph=H-padT-padB, n=points.length;
+  const X=i=> n===1?padL+pw/2:padL+i*(pw/(n-1));
+  const Y=v=> padT+(yMax-v)/(yMax-yMin)*ph;
+  let grid='',labels='';
+  [yMax,yMin].forEach(v=>{ const y=Y(v); grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" class="cg"/>'; labels+='<text x="'+(padL-6)+'" y="'+(y+3)+'" class="cl" text-anchor="end">'+v+'</text>'; });
+  const line=points.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.value).toFixed(1)).join(' ');
+  const dots=points.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.value).toFixed(1)+'" r="3" class="cd"/>').join('');
+  const xl=i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" class="cl" text-anchor="middle">'+new Date(points[i].label+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</text>';
+  const xlabels=n===1?xl(0):xl(0)+xl(n-1);
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" style="margin-bottom:14px">'+grid+labels+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
+}
+function openExerciseHistory(name){
+  const days=Object.keys(exercises).sort();
+  const points=[];
+  days.forEach(k=>{ const es=exercises[k].filter(it=>norm(it.name)===norm(name)); if(!es.length) return;
+    let mw=null; es.forEach(it=>{ if(it.weight!=null) mw=(mw==null)?it.weight:Math.max(mw,it.weight); });
+    points.push({k,w:mw}); });
+  document.getElementById('exModalTitle').textContent=name;
+  const body=document.getElementById('exModalBody');
+  if(!points.length){ body.innerHTML='<div class="empty">No history yet.</div>'; }
+  else{
+    const withW=points.filter(p=>p.w!=null);
+    const best=withW.length?Math.max(...withW.map(p=>p.w)):null;
+    const bestLine=best!=null?'<div class="hint" style="margin:0 0 12px">🏆 Best: '+best+' kg · '+points.length+' session'+(points.length>1?'s':'')+'</div>':'';
+    const chart=withW.length?miniChart(withW.map(p=>({label:p.k,value:p.w}))):'';
+    const rows=points.slice().reverse().map(p=>'<div class="weekrow"><span class="muted">'+prettyDate(p.k)+'</span><span class="kg">'+(p.w!=null?p.w+' kg':'—')+'</span></div>').join('');
+    body.innerHTML=bestLine+chart+rows;
+  }
+  document.getElementById('exModal').hidden=false;
+}
+document.getElementById('exModalClose').onclick=()=>document.getElementById('exModal').hidden=true;
+document.getElementById('exModal').onclick=e=>{ if(e.target.id==='exModal') document.getElementById('exModal').hidden=true; };
 
 /* weight */
 function renderWeightChart(){
@@ -393,9 +506,9 @@ function renderWeightChart(){
   const keys=Object.keys(weights).sort();
   if(!keys.length){ box.innerHTML='<div class="empty">Log a weigh-in to see your graph.</div>'; return; }
   const vals=keys.map(k=>weights[k]);
-  const dMin=Math.min(...vals), dMax=Math.max(...vals), spread=dMax-dMin;
-  const center=(dMin+dMax)/2;
-  const range=Math.max(3, spread*1.3);           // min 3 kg window, auto-expands
+  const lo=Math.min(...vals, goal), hi=Math.max(...vals, goal);   // include goal so its line shows
+  const center=(lo+hi)/2;
+  const range=Math.max(3,(hi-lo)*1.3);            // min 3 kg window, auto-expands
   const yMax=+(center+range/2).toFixed(1), yMin=+(center-range/2).toFixed(1);
   const W=320,H=170,padL=34,padR=12,padT=14,padB=26, pw=W-padL-padR, ph=H-padT-padB, n=keys.length;
   const X=i=> n===1 ? padL+pw/2 : padL+i*(pw/(n-1));
@@ -409,7 +522,11 @@ function renderWeightChart(){
   const dots=keys.map((k,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(vals[i]).toFixed(1)+'" r="3.5" class="cd"/>').join('');
   const xl=i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" class="cl" text-anchor="middle">'+new Date(keys[i]+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</text>';
   const xlabels = n===1 ? xl(0) : xl(0)+xl(n-1);
-  box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
+  let goalLine='';
+  if(goal>=yMin && goal<=yMax){ const gy=+Y(goal).toFixed(1);
+    goalLine='<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" class="cgoal"/>'
+      +'<text x="'+(W-padR)+'" y="'+(gy-4)+'" class="cl" text-anchor="end" fill="var(--neon2)">goal '+goal+'</text>'; }
+  box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+goalLine+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
 }
 
 function renderCalendar(){
@@ -438,6 +555,7 @@ function renderCalendar(){
 }
 
 function renderWeight(){
+  document.getElementById('goalVal').textContent=goal;
   renderWeightChart();
   const mk=mondayKey(), cur=weights[mk];
   document.getElementById('weightNow').innerHTML=(cur!=null?cur:'—')+'<span class="unit"> kg</span>';
@@ -460,10 +578,30 @@ function renderWeight(){
   });
 }
 document.getElementById('weightSave').onclick=()=>{ const v=document.getElementById('weightInput').value; if(v==='')return; weights[mondayKey()]=parseFloat(v); DB.set('weights',weights); renderWeight(); showToast('Weight saved ✓'); };
+document.getElementById('goalEdit').onclick=()=>{
+  const v=prompt('Set your goal weight (kg):', goal);
+  if(v==null) return;
+  const n=parseFloat(v);
+  if(isNaN(n)||n<=0){ alert('Enter a valid number.'); return; }
+  goal=n; DB.set('goal',goal); renderWeight(); showToast('Goal set to '+goal+' kg');
+};
 
 /* log */
+function renderWeekSummary(){
+  const box=document.getElementById('weekSummary');
+  const mon=mondayOf(); let workouts=0, volume=0, shakeDays=0;
+  for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d);
+    if(exercises[k]&&exercises[k].length){ workouts++; volume+=exercises[k].reduce((s,it)=>s+vol(it),0); }
+    if(shakes[k]) shakeDays++;
+  }
+  box.innerHTML='<div class="wsum">'
+    +'<div><div class="val">'+workouts+'</div><div class="lbl">Workouts</div></div>'
+    +'<div><div class="val">'+Math.round(volume)+'</div><div class="lbl">kg Volume</div></div>'
+    +'<div><div class="val">'+shakeDays+'</div><div class="lbl">Shakes</div></div></div>';
+}
 function renderLog(){
   calRef=new Date(); calRef.setDate(1);   // reset to current month each time Log opens
+  renderWeekSummary();
   renderCalendar();
   const el=document.getElementById('workoutLog');
   const days=Object.keys(exercises).sort().reverse();
@@ -473,13 +611,14 @@ function renderLog(){
     const head=document.createElement('div'); head.className='weekrow';
     const shk=shakes[day]?' · 🥤':'';
     const cnt=exercises[day].length;
-    const totKg=exercises[day].reduce((s,it)=>s+(it.weight!=null?it.weight:0),0);
-    const kgStr=totKg>0?' · '+(+totKg.toFixed(1))+' kg':'';
+    const totVol=exercises[day].reduce((s,it)=>s+vol(it),0);
+    const kgStr=totVol>0?' · '+Math.round(totVol)+' kg':'';
     head.innerHTML='<span class="wk">'+prettyDate(day)+shk+'</span><span class="muted">'+cnt+' exercise'+(cnt>1?'s':'')+kgStr+'</span>';
     el.appendChild(head);
     exercises[day].forEach(it=>{
       const r=document.createElement('div'); r.className='weekrow';
-      r.innerHTML='<span class="muted" style="padding-left:8px">'+it.name+'</span><span class="kg">'+(it.weight!=null?it.weight+' kg':'—')+'</span>';
+      r.innerHTML='<span class="muted link" style="padding-left:8px">'+it.name+'</span><span class="kg">'+fmtEntry(it)+'</span>';
+      r.querySelector('.link').onclick=()=>openExerciseHistory(it.name);
       el.appendChild(r);
     });
   });
@@ -489,13 +628,13 @@ function renderLog(){
 document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Reset all data? This erases every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
-  exercises={}; weights={}; shakes={};
+  exercises={}; weights={}; shakes={}; goal=75; DB.set('goal',goal);
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -514,7 +653,8 @@ document.getElementById('importFile').onchange=e=>{
       exercises=(d.exercises&&typeof d.exercises==='object')?d.exercises:{};
       weights=(d.weights&&typeof d.weights==='object')?d.weights:{};
       shakes=(d.shakes&&typeof d.shakes==='object')?d.shakes:{};
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes);
+      if(typeof d.goal==='number' && d.goal>0) goal=d.goal;
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal);
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog();
       showToast('Backup imported ✓');
     }catch(err){ alert('Could not read that backup file.'); }
