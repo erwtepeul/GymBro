@@ -18,14 +18,27 @@
     --radius:18px;
     --glow:0 0 12px rgba(57,255,20,.55), 0 0 26px rgba(57,255,20,.25);
     --glow-cy:0 0 12px rgba(0,240,255,.5), 0 0 26px rgba(0,240,255,.2);
+    --ga:rgba(57,255,20,.10); --gb:rgba(0,240,255,.08); --focus:rgba(57,255,20,.15);
+  }
+  html[data-theme="ember"]{
+    --neon:#ff7a1a; --neon2:#ffd23f;
+    --glow:0 0 12px rgba(255,122,26,.55), 0 0 26px rgba(255,122,26,.25);
+    --glow-cy:0 0 12px rgba(255,210,63,.5), 0 0 26px rgba(255,210,63,.2);
+    --ga:rgba(255,122,26,.10); --gb:rgba(255,59,107,.08); --focus:rgba(255,122,26,.15);
+  }
+  html[data-theme="grape"]{
+    --neon:#a855f7; --neon2:#22d3ee;
+    --glow:0 0 12px rgba(168,85,247,.55), 0 0 26px rgba(168,85,247,.25);
+    --glow-cy:0 0 12px rgba(34,211,238,.5), 0 0 26px rgba(34,211,238,.2);
+    --ga:rgba(168,85,247,.12); --gb:rgba(34,211,238,.08); --focus:rgba(168,85,247,.15);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:
-      radial-gradient(1200px 600px at 50% -10%, rgba(57,255,20,.10), transparent 60%),
-      radial-gradient(900px 500px at 100% 110%, rgba(0,240,255,.08), transparent 60%),
+      radial-gradient(1200px 600px at 50% -10%, var(--ga), transparent 60%),
+      radial-gradient(900px 500px at 100% 110%, var(--gb), transparent 60%),
       var(--bg);
     color:var(--ink);
     display:flex; flex-direction:column;
@@ -66,7 +79,7 @@
     padding:15px;width:100%;outline:none;transition:.15s;
   }
   input::placeholder{color:#55556a}
-  input:focus,select:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(57,255,20,.15)}
+  input:focus,select:focus{border-color:var(--neon);box-shadow:0 0 0 3px var(--focus)}
 
   button{
     font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;
@@ -106,7 +119,7 @@
   .streak-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:6px}
   .streak{font-size:13px;color:var(--neon2);font-weight:800;text-transform:uppercase;letter-spacing:1px}
   .streak-title{font-size:12px;color:var(--neon);font-weight:800;text-transform:uppercase;letter-spacing:1.5px;
-    text-shadow:0 0 8px rgba(57,255,20,.35)}
+    text-shadow:0 0 8px currentColor}
 
   .weekrow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
   .weekrow:last-child{border-bottom:none}
@@ -128,7 +141,7 @@
   .cg{stroke:var(--line);stroke-width:1}
   .cl{fill:var(--muted);font-size:9px;font-weight:700}
   .cline{fill:none;stroke:var(--neon);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;
-    filter:drop-shadow(0 0 4px rgba(57,255,20,.6))}
+    filter:drop-shadow(0 0 4px var(--neon))}
   .carea{fill:rgba(57,255,20,.12);stroke:none}
   .cd{fill:var(--neon2);stroke:var(--card);stroke-width:1.5}
 
@@ -213,7 +226,7 @@
   .goalw .ring{width:72px;height:72px;flex:0 0 auto}
   .goalw .rbg{fill:none;stroke:var(--line);stroke-width:9}
   .goalw .rfg{fill:none;stroke:var(--neon2);stroke-width:9;stroke-linecap:round;
-    transform:rotate(-90deg);transform-origin:50% 50%;filter:drop-shadow(0 0 4px rgba(0,240,255,.6));transition:stroke-dashoffset .4s}
+    transform:rotate(-90deg);transform-origin:50% 50%;filter:drop-shadow(0 0 4px var(--neon2));transition:stroke-dashoffset .4s}
   .goalw .rtxt{fill:var(--neon2);font-size:22px;font-weight:900}
   .goalw-info{flex:1}
   .goalw-count{font-size:20px;font-weight:900;color:var(--ink)}
@@ -224,6 +237,20 @@
 
   /* entry edit button */
   li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none}
+
+  /* settings */
+  .themes{display:flex;gap:10px}
+  .theme-opt{flex:1;background:var(--bg2);border:2px solid var(--line);border-radius:14px;
+    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;
+    color:var(--muted);text-transform:none;letter-spacing:0;font-size:12px;font-weight:800;box-shadow:none}
+  .theme-opt .sw{width:100%;height:22px;border-radius:8px}
+  .theme-opt.active{border-color:var(--neon);color:var(--ink)}
+  .set-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
+  .set-row:last-child{border-bottom:none}
+  .set-row .val{display:flex;align-items:center;gap:4px;color:var(--muted)}
+  .set-row .val b{color:var(--neon2);font-size:16px}
+  .set-row .ghost{padding:8px 14px;font-size:13px;margin-left:8px}
+  .copyr{text-align:center;font-size:10px;color:var(--muted);margin-top:6px;font-weight:600;letter-spacing:.5px}
 
   /* nav */
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;border-top:1px solid var(--line);
@@ -321,10 +348,6 @@
     <h2>Trend</h2>
     <div class="card">
       <div id="weightChart"></div>
-      <div class="goal-row">
-        <span>🎯 Goal <b id="goalVal">75</b> kg</span>
-        <button id="goalEdit" class="ghost">Change</button>
-      </div>
     </div>
 
     <h2>History</h2>
@@ -359,6 +382,18 @@
 
     <h2>Milestones</h2>
     <div class="card"><div id="statMilestones"></div></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <h2>Theme</h2>
+    <div class="card"><div class="themes" id="themePicker"></div></div>
+
+    <h2>Goals</h2>
+    <div class="card">
+      <div class="set-row"><span>🎯 Weight goal</span><span class="val"><b id="setGoalVal">75</b> kg <button id="goalEdit" class="ghost">Change</button></span></div>
+      <div class="set-row"><span>🏋️ Workouts / week</span><span class="val"><b id="setWeeklyVal">3</b><button id="wgoalEdit" class="ghost">Change</button></span></div>
+    </div>
 
     <h2>Backup</h2>
     <div class="row" style="gap:10px">
@@ -367,8 +402,10 @@
     </div>
     <input type="file" id="importFile" accept="application/json" hidden>
 
-    <button id="resetBtn" class="danger-btn">Reset all data</button>
-    <div class="ver-foot" id="verLabel">v1.11.1</div>
+    <button id="resetBtn" class="danger-btn">Erase all data</button>
+
+    <div class="ver-foot" id="verLabel">v1.12.0</div>
+    <div class="copyr">© Koot | All rights reserved.</div>
   </section>
 </main>
 
@@ -381,6 +418,8 @@
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>Log</button>
   <button data-view="stats">
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 0 1-10 0V4z"/><path d="M7 6.5H4.5V7a2.5 2.5 0 0 0 2.5 2.5M17 6.5h2.5V7a2.5 2.5 0 0 1-2.5 2.5"/><path d="M12 12v3.5M9 20h6M10.5 20v-2.5h3V20"/></svg></span>Stats</button>
+  <button data-view="settings">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></svg></span>Settings</button>
 </nav>
 <div id="toast" class="toast"></div>
 
@@ -407,7 +446,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.11.1';
+const APP_VERSION='1.12.0';
 
 /* storage */
 const DB={
@@ -435,7 +474,13 @@ let weights=DB.get('weights',{});
 let shakes=DB.get('shakes',{});
 let goal=DB.get('goal',75);                  // goal weight in kg
 let weeklyGoal=DB.get('weeklyGoal',3);       // workouts-per-week target
+let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
+
+/* theme */
+const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'}];
+function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
+applyTheme();
 
 /* one-time: mark 20 & 21 Jul 2026 as shake days */
 const SHAKE_SEED='shakeseed-20260720-21';
@@ -470,8 +515,28 @@ document.querySelectorAll('nav button').forEach(b=>{
     if(b.dataset.view==='weight') renderWeight();
     if(b.dataset.view==='log') renderLog();
     if(b.dataset.view==='stats') renderStats();
+    if(b.dataset.view==='settings') renderSettings();
   };
 });
+
+/* settings */
+function renderThemes(){
+  const box=document.getElementById('themePicker');
+  box.innerHTML=THEMES.map(t=>'<button class="theme-opt'+(t.id===theme?' active':'')+'" data-set="'+t.id+'">'
+    +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
+  box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
+}
+function renderSettings(){
+  renderThemes();
+  document.getElementById('setGoalVal').textContent=goal;
+  document.getElementById('setWeeklyVal').textContent=weeklyGoal;
+}
+document.getElementById('wgoalEdit').onclick=()=>{
+  const v=prompt('Workouts-per-week goal:', weeklyGoal);
+  if(v==null) return; const n=parseInt(v,10);
+  if(isNaN(n)||n<1){ alert('Enter a whole number of 1 or more.'); return; }
+  weeklyGoal=n; DB.set('weeklyGoal',weeklyGoal); renderWeeklyGoal(); renderSettings(); showToast('Weekly goal: '+n+'×');
+};
 
 /* shake */
 function shakeTier(n){
@@ -596,13 +661,7 @@ function renderWeeklyGoal(){
   const info='<div class="goalw-info"><div class="goalw-count"><b>'+done+'</b> / '+weeklyGoal+'</div>'
     +'<div class="goalw-sub">workouts this week</div>'
     +'<div class="goalw-streak">'+(streak>0?'🔥 '+streak+'-week streak':'')+'</div></div>';
-  box.innerHTML=ring+info+'<button id="wgoalEdit" class="ghost">Change</button>';
-  document.getElementById('wgoalEdit').onclick=()=>{
-    const v=prompt('Workouts-per-week goal:', weeklyGoal);
-    if(v==null) return; const n=parseInt(v,10);
-    if(isNaN(n)||n<1){ alert('Enter a whole number of 1 or more.'); return; }
-    weeklyGoal=n; DB.set('weeklyGoal',weeklyGoal); renderWeeklyGoal(); showToast('Weekly goal: '+n+'×');
-  };
+  box.innerHTML=ring+info;
 }
 
 const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
@@ -764,7 +823,6 @@ function renderCalendar(){
 }
 
 function renderWeight(){
-  document.getElementById('goalVal').textContent=goal;
   renderWeightChart();
   const mk=mondayKey(), cur=weights[mk];
   document.getElementById('weightNow').innerHTML=(cur!=null?fmtDec(cur):'—')+'<span class="unit"> kg</span>';
@@ -792,7 +850,7 @@ document.getElementById('goalEdit').onclick=()=>{
   if(v==null) return;
   const n=parseFloat(v);
   if(isNaN(n)||n<=0){ alert('Enter a valid number.'); return; }
-  goal=n; DB.set('goal',goal); renderWeight(); showToast('Goal set to '+goal+' kg');
+  goal=n; DB.set('goal',goal); renderWeight(); renderSettings(); showToast('Goal set to '+goal+' kg');
 };
 
 /* log */

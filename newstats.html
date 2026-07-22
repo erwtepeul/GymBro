@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>GymBro · Weekly Muscle Map (concept)</title>
+<style>
+  :root{
+    --bg:#0a0a0f; --bg2:#111119; --card:#15151f; --ink:#f2f2f7; --muted:#7a7a8c; --line:#26263a;
+    --neon:#39ff14; --neon2:#00f0ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(57,255,20,.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 110%, rgba(0,240,255,.08), transparent 60%), var(--bg);
+    color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;padding:26px 16px 40px}
+  .wrap{max-width:560px;margin:0 auto}
+  h1{font-size:22px;font-weight:900;letter-spacing:-.5px;text-transform:uppercase;margin:0 0 2px;
+     color:var(--neon);text-shadow:0 0 12px rgba(57,255,20,.5)}
+  .sub{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 14px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin:24px 4px 10px;font-weight:800}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px}
+  .lg{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700}
+  .dotc{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+
+  /* matrix */
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:center;padding:7px 2px}
+  th.week,td.week{text-align:left;font-size:11px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;padding-left:2px;padding-right:8px}
+  thead th{font-size:10px;font-weight:900;letter-spacing:.5px;padding-bottom:10px}
+  tbody tr{border-top:1px solid var(--line)}
+  .cell{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;align-items:center;min-height:20px;max-width:52px;margin:0 auto}
+  .d{width:9px;height:9px;border-radius:50%}
+  .empty{width:7px;height:7px;border-radius:50%;background:#20202c;box-shadow:inset 0 0 0 1px var(--line)}
+
+  .note{font-size:11px;color:var(--muted);margin-top:14px;font-weight:600;line-height:1.5}
+  .row-total{font-size:11px;font-weight:900;color:var(--neon2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Weekly Muscle Map</h1>
+  <div class="sub">Concept · dots = workouts per group</div>
+
+  <div class="legend" id="legend"></div>
+
+  <h2>Last 2 Weeks</h2>
+  <div class="card">
+    <table id="matrix"></table>
+    <div class="note">Each dot is one workout that hit that muscle group during the week. An empty ring means you skipped that group — easy to spot gaps (see Legs).</div>
+  </div>
+</div>
+
+<script>
+const GROUPS=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
+const SHORT={Chest:'CHE',Back:'BCK',Shoulders:'SHO',Arms:'ARM',Legs:'LEG',Core:'COR',Cardio:'CAR'};
+const COLORS={Chest:'#39ff14',Back:'#00f0ff',Shoulders:'#ff3b6b',Arms:'#ffd23f',Legs:'#b56bff',Core:'#ff8c42',Cardio:'#38bdf8'};
+
+/* sample data — current two weeks, workouts per group that week */
+const weeks=[
+  {label:'Jul 13', c:{Chest:2,Back:2,Shoulders:2,Arms:1,Legs:1,Core:0,Cardio:1}},
+  {label:'Jul 20', c:{Chest:1,Back:2,Shoulders:1,Arms:2,Legs:2,Core:1,Cardio:1}},
+];
+
+/* legend */
+document.getElementById('legend').innerHTML=GROUPS.map(g=>
+  '<span class="lg"><span class="dotc" style="background:'+COLORS[g]+';box-shadow:0 0 6px '+COLORS[g]+'"></span>'+g+'</span>').join('');
+
+/* matrix */
+let html='<thead><tr><th class="week"></th>';
+GROUPS.forEach(g=>{ html+='<th style="color:'+COLORS[g]+'">'+SHORT[g]+'</th>'; });
+html+='<th style="color:var(--muted)">Σ</th></tr></thead><tbody>';
+weeks.forEach(w=>{
+  let total=0;
+  html+='<tr><td class="week">'+w.label+'</td>';
+  GROUPS.forEach(g=>{
+    const n=w.c[g]||0; total+=n;
+    let cell='<div class="cell">';
+    if(n===0){ cell+='<span class="empty"></span>'; }
+    else { for(let i=0;i<n;i++) cell+='<span class="d" style="background:'+COLORS[g]+';box-shadow:0 0 5px '+COLORS[g]+'"></span>'; }
+    cell+='</div>';
+    html+='<td>'+cell+'</td>';
+  });
+  html+='<td class="row-total">'+total+'</td></tr>';
+});
+html+='</tbody>';
+document.getElementById('matrix').innerHTML=html;
+</script>
+</body>
+</html>
