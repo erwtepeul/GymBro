@@ -157,10 +157,14 @@
   .goal-row .ghost{padding:8px 14px;font-size:13px}
   .cgoal{stroke:var(--neon2);stroke-width:1.5;stroke-dasharray:5 4;opacity:.9}
 
-  /* week summary */
-  .wsum{display:flex;justify-content:space-around;text-align:center;gap:8px}
-  .wsum .val{font-size:26px;font-weight:900;color:var(--neon);text-shadow:var(--glow);line-height:1}
-  .wsum .lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
+  /* summary */
+  .sum-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
+  .sum-row:last-child{border-bottom:none}
+  .sum-row .per{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+  .sum-row .stat{font-size:13px;font-weight:700;color:var(--ink)}
+  .sum-row .stat b{font-weight:900;color:var(--neon)}
+  .sum-row.life .per{color:var(--neon2)}
+  .sum-row.life .stat b{color:var(--neon2)}
 
   /* exercise-history modal */
   .modal{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;justify-content:center;
@@ -200,7 +204,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.5.2</span>
+      <span class="ver" id="verLabel">v1.5.3</span>
     </div>
   </div>
 </header>
@@ -271,7 +275,7 @@
 
   <!-- LOG -->
   <section class="view" id="view-log">
-    <h2>This Week</h2>
+    <h2>Summary</h2>
     <div class="card"><div id="weekSummary"></div></div>
 
     <h2>Calendar</h2>
@@ -309,7 +313,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.5.2';
+const APP_VERSION='1.5.3';
 
 /* storage */
 const DB={
@@ -588,17 +592,25 @@ document.getElementById('goalEdit').onclick=()=>{
 };
 
 /* log */
+function periodStats(pred){
+  let workouts=0, volume=0;
+  Object.keys(exercises).forEach(k=>{ const arr=exercises[k]; if(!arr||!arr.length||!pred(k)) return;
+    workouts++; volume+=arr.reduce((s,it)=>s+vol(it),0); });
+  return {workouts, volume};
+}
 function renderWeekSummary(){
   const box=document.getElementById('weekSummary');
-  const mon=mondayOf(); let workouts=0, volume=0, shakeDays=0;
-  for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d);
-    if(exercises[k]&&exercises[k].length){ workouts++; volume+=exercises[k].reduce((s,it)=>s+vol(it),0); }
-    if(shakes[k]) shakeDays++;
-  }
-  box.innerHTML='<div class="wsum">'
-    +'<div><div class="val">'+workouts+'</div><div class="lbl">Workouts</div></div>'
-    +'<div><div class="val">'+Math.round(volume)+'</div><div class="lbl">kg Volume</div></div>'
-    +'<div><div class="val">'+shakeDays+'</div><div class="lbl">Shakes</div></div></div>';
+  const now=new Date();
+  const mon=mondayOf(); const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const wStart=todayKey(mon), wEnd=todayKey(sun);
+  const ym=todayKey(now).slice(0,7), yr=String(now.getFullYear());
+  const week =periodStats(k=>k>=wStart&&k<=wEnd);
+  const month=periodStats(k=>k.slice(0,7)===ym);
+  const year =periodStats(k=>k.slice(0,4)===yr);
+  const life =periodStats(()=>true);
+  const row=(label,st,cls)=>'<div class="sum-row'+(cls?' '+cls:'')+'"><span class="per">'+label+'</span>'
+    +'<span class="stat"><b>'+st.workouts+'</b> workout'+(st.workouts===1?'':'s')+' · <b>'+Math.round(st.volume).toLocaleString()+'</b> kg</span></div>';
+  box.innerHTML=row('This Week',week)+row('This Month',month)+row('This Year',year)+row('Lifetime',life,'life');
 }
 function renderLog(){
   calRef=new Date(); calRef.setDate(1);   // reset to current month each time Log opens
