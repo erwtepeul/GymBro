@@ -119,12 +119,18 @@
   .cd{fill:var(--neon2);stroke:var(--card);stroke-width:1.5}
 
   /* calendar */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
   .cal-head{text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:1px;
-    font-size:13px;margin-bottom:12px;color:var(--ink)}
+    font-size:13px;color:var(--ink);margin:0}
+  .cal-btn{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:10px;
+    width:36px;height:32px;padding:0;font-size:18px;font-weight:800;line-height:1;box-shadow:none}
+  .cal-btn:disabled{opacity:.25}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
   .cal-dow{text-align:center;font-size:10px;font-weight:800;color:var(--muted);padding-bottom:4px}
-  .cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  .cal-cell{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
     font-size:13px;font-weight:700;color:var(--ink);border:2px solid transparent;border-radius:50%}
+  .cal-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+    width:4px;height:4px;border-radius:50%;background:var(--neon2);box-shadow:0 0 4px var(--neon2)}
   .cal-cell.done{border-color:var(--neon);color:var(--neon);box-shadow:var(--glow)}
   .cal-cell.today{color:var(--neon2)}
   .cal-cell.today.done{color:var(--neon)}
@@ -159,7 +165,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.3.0</span>
+      <span class="ver" id="verLabel">v1.3.1</span>
     </div>
   </div>
 </header>
@@ -239,7 +245,7 @@
 </nav>
 
 <script>
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.3.1';
 
 /* storage */
 const DB={
@@ -265,6 +271,7 @@ if(localStorage.getItem('gymbro_reset')!==RESET_TOKEN){
 let exercises=DB.get('exercises',{});
 let weights=DB.get('weights',{});
 let shakes=DB.get('shakes',{});
+let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 document.getElementById('verLabel').textContent='v'+APP_VERSION;
 
@@ -347,20 +354,27 @@ function renderWeightChart(){
 
 function renderCalendar(){
   const box=document.getElementById('logCalendar');
-  const now=new Date(), year=now.getFullYear(), month=now.getMonth();
+  const year=calRef.getFullYear(), month=calRef.getMonth();
   const first=new Date(year,month,1);
   const startDay=(first.getDay()+6)%7;                 // Mon=0
   const days=new Date(year,month+1,0).getDate();
-  const tK=todayKey();
-  let h='<div class="cal-head">'+first.toLocaleDateString(undefined,{month:'long',year:'numeric'})+'</div><div class="cal-grid">';
+  const tK=todayKey(), now=new Date();
+  const atCurrent = year===now.getFullYear() && month===now.getMonth();
+  let h='<div class="cal-nav"><button class="cal-btn" id="calPrev" aria-label="previous month">‹</button>'
+      +'<div class="cal-head">'+first.toLocaleDateString(undefined,{month:'long',year:'numeric'})+'</div>'
+      +'<button class="cal-btn" id="calNext" aria-label="next month"'+(atCurrent?' disabled':'')+'>›</button></div>';
+  h+='<div class="cal-grid">';
   ['M','T','W','T','F','S','S'].forEach(d=>h+='<div class="cal-dow">'+d+'</div>');
   for(let i=0;i<startDay;i++) h+='<div class="cal-cell"></div>';
   for(let d=1;d<=days;d++){
     const k=todayKey(new Date(year,month,d));
     const done=exercises[k]&&exercises[k].length;
-    h+='<div class="cal-cell'+(done?' done':'')+(k===tK?' today':'')+'">'+d+'</div>';
+    const shk=!!shakes[k];
+    h+='<div class="cal-cell'+(done?' done':'')+(k===tK?' today':'')+'">'+d+(shk?'<span class="cal-dot"></span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
+  document.getElementById('calPrev').onclick=()=>{ calRef.setMonth(calRef.getMonth()-1); renderCalendar(); };
+  document.getElementById('calNext').onclick=()=>{ if(atCurrent)return; calRef.setMonth(calRef.getMonth()+1); renderCalendar(); };
 }
 
 function renderWeight(){
@@ -389,6 +403,7 @@ document.getElementById('weightSave').onclick=()=>{ const v=document.getElementB
 
 /* log */
 function renderLog(){
+  calRef=new Date(); calRef.setDate(1);   // reset to current month each time Log opens
   renderCalendar();
   const el=document.getElementById('workoutLog');
   const days=Object.keys(exercises).sort().reverse();
