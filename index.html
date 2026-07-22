@@ -368,7 +368,7 @@
     <input type="file" id="importFile" accept="application/json" hidden>
 
     <button id="resetBtn" class="danger-btn">Reset all data</button>
-    <div class="ver-foot" id="verLabel">v1.10.7</div>
+    <div class="ver-foot" id="verLabel">v1.11.0</div>
   </section>
 </main>
 
@@ -407,7 +407,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.10.7';
+const APP_VERSION='1.11.0';
 
 /* storage */
 const DB={
@@ -450,7 +450,7 @@ function fmtDec(n){ return Number(n).toLocaleString('nl-NL',{maximumFractionDigi
 /* muscle groups */
 const GROUPS=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
 const GROUP_COLORS={Chest:'#39ff14',Back:'#00f0ff',Shoulders:'#ff3b6b',Arms:'#ffd23f',Legs:'#b56bff',Core:'#ff8c42',Cardio:'#38bdf8'};
-const GROUP_OPTIONS='<option value="">Muscle group (optional)</option>'+GROUPS.map(g=>'<option>'+g+'</option>').join('');
+const GROUP_OPTIONS='<option value="">Select muscle group</option>'+GROUPS.map(g=>'<option>'+g+'</option>').join('');
 
 /* nav */
 document.querySelectorAll('nav button').forEach(b=>{
@@ -551,9 +551,10 @@ document.getElementById('editModal').onclick=e=>{ if(e.target.id==='editModal') 
 document.getElementById('editSave').onclick=()=>{
   if(!editTarget) return;
   const name=document.getElementById('editName').value.trim(); if(!name){ alert('Exercise name required.'); return; }
+  const grp=document.getElementById('editGroup').value; if(!grp){ alert('Pick a muscle group.'); return; }
   const it=exercises[editTarget.day][editTarget.idx];
   it.name=name;
-  it.group=document.getElementById('editGroup').value||null;
+  it.group=grp;
   it.weight=document.getElementById('editWeight').value===''?null:parseFloat(document.getElementById('editWeight').value);
   it.sets=document.getElementById('editSets').value===''?null:parseInt(document.getElementById('editSets').value,10);
   it.reps=document.getElementById('editReps').value===''?null:parseInt(document.getElementById('editReps').value,10);
@@ -621,6 +622,7 @@ document.getElementById('exAdd').onclick=()=>{
   const sets=exSetsEl.value===''?null:parseInt(exSetsEl.value,10);
   const reps=exRepsEl.value===''?null:parseInt(exRepsEl.value,10);
   const group=exGroupEl.value||null;
+  if(!group){ showToast('Pick a muscle group'); exGroupEl.focus(); return; }
   const prevBest=bestFor(name);               // best BEFORE this entry
   const k=logDate();
   (exercises[k]=exercises[k]||[]).push({name,weight,sets,reps,group});
