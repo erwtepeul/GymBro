@@ -368,7 +368,7 @@
     <input type="file" id="importFile" accept="application/json" hidden>
 
     <button id="resetBtn" class="danger-btn">Reset all data</button>
-    <div class="ver-foot" id="verLabel">v1.11.0</div>
+    <div class="ver-foot" id="verLabel">v1.11.1</div>
   </section>
 </main>
 
@@ -407,7 +407,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.11.0';
+const APP_VERSION='1.11.1';
 
 /* storage */
 const DB={
@@ -436,6 +436,14 @@ let shakes=DB.get('shakes',{});
 let goal=DB.get('goal',75);                  // goal weight in kg
 let weeklyGoal=DB.get('weeklyGoal',3);       // workouts-per-week target
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
+
+/* one-time: mark 20 & 21 Jul 2026 as shake days */
+const SHAKE_SEED='shakeseed-20260720-21';
+if(localStorage.getItem('gymbro_'+SHAKE_SEED)!=='done'){
+  shakes['2026-07-20']=true; shakes['2026-07-21']=true;
+  DB.set('shakes',shakes);
+  localStorage.setItem('gymbro_'+SHAKE_SEED,'done');
+}
 
 document.getElementById('verLabel').textContent='v'+APP_VERSION;
 
