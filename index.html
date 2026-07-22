@@ -33,7 +33,8 @@
     padding-top:env(safe-area-inset-top);
   }
   /* header / wordmark */
-  header{flex:0 0 auto;padding:32px 20px 6px;text-align:center}
+  header{flex:0 0 auto;padding:28px 20px 8px;text-align:left}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .brand{display:inline-flex;align-items:center;gap:12px}
   .brand svg{width:34px;height:34px;filter:drop-shadow(var(--glow))}
   .wordmark{
@@ -44,8 +45,8 @@
   }
   .wordmark b{color:var(--neon2);text-shadow:var(--glow-cy)}
   .namecol{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
-  .ver{margin-top:3px;font-size:8px;font-weight:700;letter-spacing:.5px;
-    color:var(--muted);text-transform:uppercase}
+  .ver{font-size:9px;font-weight:700;letter-spacing:.5px;
+    color:var(--muted);text-transform:uppercase;flex:0 0 auto}
   .slogan{margin-top:8px;font-size:10px;font-weight:800;letter-spacing:2px;
     text-transform:uppercase;color:var(--neon2);text-shadow:0 0 8px rgba(0,240,255,.3)}
 
@@ -238,20 +239,20 @@
 </head>
 <body>
 <header>
-  <div class="brand">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <g fill="var(--neon)">
-        <rect x="6"  y="38" width="13" height="24" rx="6"/>
-        <rect x="24" y="28" width="13" height="44" rx="6"/>
-        <rect x="37" y="45" width="26" height="10" rx="5"/>
-        <rect x="63" y="28" width="13" height="44" rx="6"/>
-        <rect x="81" y="38" width="13" height="24" rx="6"/>
-      </g>
-    </svg>
-    <div class="namecol">
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <g fill="var(--neon)">
+          <rect x="6"  y="38" width="13" height="24" rx="6"/>
+          <rect x="24" y="28" width="13" height="44" rx="6"/>
+          <rect x="37" y="45" width="26" height="10" rx="5"/>
+          <rect x="63" y="28" width="13" height="44" rx="6"/>
+          <rect x="81" y="38" width="13" height="24" rx="6"/>
+        </g>
+      </svg>
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.10.3</span>
     </div>
+    <span class="ver" id="verLabel">v1.10.4</span>
   </div>
   <div class="slogan">Built different. Tracked better.</div>
 </header>
@@ -406,7 +407,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.10.3';
+const APP_VERSION='1.10.4';
 
 /* storage */
 const DB={
