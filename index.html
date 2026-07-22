@@ -241,7 +241,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.7.2</span>
+      <span class="ver" id="verLabel">v1.8.0</span>
     </div>
   </div>
 </header>
@@ -326,6 +326,21 @@
 
     <h2>Workout Log</h2>
     <div class="card"><div id="workoutLog"></div></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="view" id="view-stats">
+    <h2>This Week</h2>
+    <div class="card"><div id="statSummary"></div></div>
+
+    <h2>This Month</h2>
+    <div class="card"><div id="statMonth"></div></div>
+
+    <h2>This Year</h2>
+    <div class="card"><div id="statYear"></div></div>
+
+    <h2>Milestones</h2>
+    <div class="card"><div id="statMilestones"></div></div>
 
     <h2>Backup</h2>
     <div class="row" style="gap:10px">
@@ -335,15 +350,6 @@
     <input type="file" id="importFile" accept="application/json" hidden>
 
     <button id="resetBtn" class="danger-btn">Reset all data</button>
-  </section>
-
-  <!-- STATS -->
-  <section class="view" id="view-stats">
-    <h2>This Week</h2>
-    <div class="card"><div id="statSummary"></div></div>
-
-    <h2>Milestones</h2>
-    <div class="card"><div id="statMilestones"></div></div>
   </section>
 </main>
 
@@ -381,7 +387,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.7.2';
+const APP_VERSION='1.8.0';
 
 /* storage */
 const DB={
@@ -749,16 +755,22 @@ function periodStats(pred){
     workouts++; volume+=arr.reduce((s,it)=>s+vol(it),0); });
   return {workouts, volume};
 }
+function periodShakes(pred){ return Object.keys(shakes).filter(k=>shakes[k]&&pred(k)).length; }
+function renderSummaryBox(boxId,pred){
+  const st=periodStats(pred), sh=periodShakes(pred);
+  document.getElementById(boxId).innerHTML='<div class="wsum">'
+    +'<div><div class="val">'+fmtNum(st.workouts)+'</div><div class="lbl">Workouts</div></div>'
+    +'<div><div class="val">'+fmtNum(st.volume)+'</div><div class="lbl">kg Volume</div></div>'
+    +'<div><div class="val">'+fmtNum(sh)+'</div><div class="lbl">Shakes</div></div></div>';
+}
 function renderWeekSummary(){
-  const box=document.getElementById('statSummary');
+  const now=new Date();
   const mon=mondayOf(); const sun=new Date(mon); sun.setDate(mon.getDate()+6);
   const wStart=todayKey(mon), wEnd=todayKey(sun);
-  const week=periodStats(k=>k>=wStart&&k<=wEnd);
-  let shakeDays=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); if(shakes[todayKey(d)]) shakeDays++; }
-  box.innerHTML='<div class="wsum">'
-    +'<div><div class="val">'+fmtNum(week.workouts)+'</div><div class="lbl">Workouts</div></div>'
-    +'<div><div class="val">'+fmtNum(week.volume)+'</div><div class="lbl">kg Volume</div></div>'
-    +'<div><div class="val">'+fmtNum(shakeDays)+'</div><div class="lbl">Shakes</div></div></div>';
+  const ym=todayKey(now).slice(0,7), yr=String(now.getFullYear());
+  renderSummaryBox('statSummary', k=>k>=wStart&&k<=wEnd);
+  renderSummaryBox('statMonth',   k=>k.slice(0,7)===ym);
+  renderSummaryBox('statYear',    k=>k.slice(0,4)===yr);
 }
 
 /* stats page helpers */
