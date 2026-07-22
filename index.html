@@ -238,7 +238,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.7.0</span>
+      <span class="ver" id="verLabel">v1.7.1</span>
     </div>
   </div>
 </header>
@@ -339,9 +339,6 @@
     <h2>Summary</h2>
     <div class="card"><div id="statSummary"></div></div>
 
-    <h2>Streaks</h2>
-    <div class="card"><div id="statStreaks"></div></div>
-
     <h2>Milestones</h2>
     <div class="card"><div id="statMilestones"></div></div>
   </section>
@@ -381,7 +378,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.7.0';
+const APP_VERSION='1.7.1';
 
 /* storage */
 const DB={
@@ -797,15 +794,9 @@ function favoriteExercise(){
 }
 function renderStats(){
   renderWeekSummary();
-  const css=currentShakeStreak(), bss=longestShakeStreak(), cws=weeklyStreak(), bws=longestWeeklyStreak();
-  document.getElementById('statStreaks').innerHTML=
-    '<div class="stat-line"><span>🥤 Shake streak</span><span class="v">'+css+' d · best '+bss+' d</span></div>'
-    +'<div class="stat-line"><span>🏆 Shake rank</span><span class="v">'+shakeTier(css)+'</span></div>'
-    +'<div class="stat-line"><span>🏋️ Workout streak</span><span class="v">'+cws+' wk · best '+bws+' wk</span></div>';
-  let totVol=0,heaviest=0,best1=0; const nameSet=new Set();
+  let totVol=0,heaviest=0;
   Object.values(exercises).forEach(a=>a.forEach(it=>{ totVol+=vol(it);
-    if(it.weight!=null){ heaviest=Math.max(heaviest,it.weight); const e=e1rm(it); if(e>best1)best1=e; }
-    nameSet.add(norm(it.name)); }));
+    if(it.weight!=null) heaviest=Math.max(heaviest,it.weight); }));
   const totWorkouts=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).length;
   const totShakes=Object.keys(shakes).filter(k=>shakes[k]).length;
   const active=new Set([...Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length), ...Object.keys(shakes).filter(k=>shakes[k])]).size;
@@ -813,8 +804,7 @@ function renderStats(){
   const tiles=[
     [fmtNum(totWorkouts),'Workouts'],[fmtNum(totVol),'kg lifted'],
     [fmtNum(totShakes),'Shakes'],[fmtNum(active),'Active days'],
-    [fmtDec(heaviest),'kg heaviest'],[fmtNum(best1),'kg best 1RM'],
-    [fmtNum(totalPRs()),'PRs hit'],[fmtNum(nameSet.size),'Exercises']
+    [fmtDec(heaviest),'kg heaviest'],[fmtNum(totalPRs()),'PRs hit']
   ];
   let html='<div class="stat-grid">'+tiles.map(t=>'<div class="stat-tile"><div class="n">'+t[0]+'</div><div class="l">'+t[1]+'</div></div>').join('')+'</div>';
   const fav=favoriteExercise();
