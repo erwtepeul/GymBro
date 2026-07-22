@@ -166,6 +166,15 @@
   .sum-row.life .per{color:var(--neon2)}
   .sum-row.life .stat b{color:var(--neon2)}
 
+  /* stats page */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat-tile{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
+  .stat-tile .n{font-size:23px;font-weight:900;color:var(--neon);text-shadow:var(--glow);line-height:1}
+  .stat-tile .l{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
+  .stat-line{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
+  .stat-line:last-child{border-bottom:none}
+  .stat-line .v{color:var(--neon2);font-weight:900;text-align:right}
+
   /* exercise-history modal */
   .modal{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;justify-content:center;
     background:rgba(0,0,0,.6);backdrop-filter:blur(3px)}
@@ -229,7 +238,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.6.1</span>
+      <span class="ver" id="verLabel">v1.7.0</span>
     </div>
   </div>
 </header>
@@ -309,9 +318,6 @@
 
   <!-- LOG -->
   <section class="view" id="view-log">
-    <h2>Summary</h2>
-    <div class="card"><div id="weekSummary"></div></div>
-
     <h2>Calendar</h2>
     <div class="card"><div id="logCalendar"></div></div>
 
@@ -327,6 +333,18 @@
 
     <button id="resetBtn" class="danger-btn">Reset all data</button>
   </section>
+
+  <!-- STATS -->
+  <section class="view" id="view-stats">
+    <h2>Summary</h2>
+    <div class="card"><div id="statSummary"></div></div>
+
+    <h2>Streaks</h2>
+    <div class="card"><div id="statStreaks"></div></div>
+
+    <h2>Milestones</h2>
+    <div class="card"><div id="statMilestones"></div></div>
+  </section>
 </main>
 
 <nav>
@@ -336,6 +354,8 @@
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4.5"/><path d="M12 7.2v3.3"/><path d="M8.4 8.4a5 5 0 0 1 7.2 0"/></svg></span>Weight</button>
   <button data-view="log">
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>Log</button>
+  <button data-view="stats">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 0 1-10 0V4z"/><path d="M7 6.5H4.5V7a2.5 2.5 0 0 0 2.5 2.5M17 6.5h2.5V7a2.5 2.5 0 0 1-2.5 2.5"/><path d="M12 12v3.5M9 20h6M10.5 20v-2.5h3V20"/></svg></span>Stats</button>
 </nav>
 <div id="toast" class="toast"></div>
 
@@ -361,7 +381,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.6.1';
+const APP_VERSION='1.7.0';
 
 /* storage */
 const DB={
@@ -397,6 +417,9 @@ document.getElementById('verLabel').textContent='v'+APP_VERSION;
 let toastT;
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
 function norm(s){ return s.trim().toLowerCase(); }
+/* Dutch numeral formatting: 1.000 / 1.000.000, decimals with comma */
+function fmtNum(n){ return Math.round(n).toLocaleString('nl-NL'); }
+function fmtDec(n){ return Number(n).toLocaleString('nl-NL',{maximumFractionDigits:1}); }
 
 /* nav */
 document.querySelectorAll('nav button').forEach(b=>{
@@ -407,6 +430,7 @@ document.querySelectorAll('nav button').forEach(b=>{
     document.getElementById('view-'+b.dataset.view).classList.add('active');
     if(b.dataset.view==='weight') renderWeight();
     if(b.dataset.view==='log') renderLog();
+    if(b.dataset.view==='stats') renderStats();
   };
 });
 
@@ -448,7 +472,7 @@ function vol(it){ return (it.weight!=null?it.weight:0)*(it.reps||1)*(it.sets||1)
 function e1rm(it){ if(it.weight==null) return null; return it.weight*(1+(it.reps||1)/30); }
 /* display string for an entry, e.g. "3×5 · 60 kg" */
 function fmtEntry(it){
-  const w = it.weight!=null ? it.weight+' kg' : '';
+  const w = it.weight!=null ? fmtDec(it.weight)+' kg' : '';
   const sr = (it.sets||it.reps) ? ((it.sets||1)+'×'+(it.reps||1)) : '';
   return [sr,w].filter(Boolean).join(' · ') || '—';
 }
@@ -589,7 +613,7 @@ function miniChart(points){
   const X=i=> n===1?padL+pw/2:padL+i*(pw/(n-1));
   const Y=v=> padT+(yMax-v)/(yMax-yMin)*ph;
   let grid='',labels='';
-  [yMax,yMin].forEach(v=>{ const y=Y(v); grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" class="cg"/>'; labels+='<text x="'+(padL-6)+'" y="'+(y+3)+'" class="cl" text-anchor="end">'+v+'</text>'; });
+  [yMax,yMin].forEach(v=>{ const y=Y(v); grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" class="cg"/>'; labels+='<text x="'+(padL-6)+'" y="'+(y+3)+'" class="cl" text-anchor="end">'+fmtDec(v)+'</text>'; });
   const line=points.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.value).toFixed(1)).join(' ');
   const dots=points.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.value).toFixed(1)+'" r="3" class="cd"/>').join('');
   const xl=i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" class="cl" text-anchor="middle">'+new Date(points[i].label+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</text>';
@@ -612,7 +636,7 @@ function openExerciseHistory(name){
     let best1=0;
     days.forEach(k=>exercises[k].forEach(it=>{ if(norm(it.name)===norm(name)){ const e=e1rm(it); if(e!=null && e>best1) best1=e; } }));
     const statLine=best!=null
-      ? '<div class="hint" style="margin:0 0 6px">🏆 Best '+best+' kg · Est. 1RM '+Math.round(best1)+' kg · '+points.length+' session'+(points.length>1?'s':'')+'</div>'
+      ? '<div class="hint" style="margin:0 0 6px">🏆 Best '+fmtDec(best)+' kg · Est. 1RM '+fmtNum(best1)+' kg · '+points.length+' session'+(points.length>1?'s':'')+'</div>'
       : '';
     // "beat last time" suggestion from the most recent session's top set
     let suggestion='';
@@ -621,10 +645,10 @@ function openExerciseHistory(name){
     if(lastSets.length){
       const top=lastSets.reduce((a,b)=> (e1rm(b)>e1rm(a)?b:a));
       const nextW=+(top.weight+2.5).toFixed(1);
-      suggestion='<div class="hint" style="margin:0 0 12px;color:var(--neon2)">⤴ Beat last time: try '+nextW+' kg'+(top.reps?(' × '+top.reps):'')+'</div>';
+      suggestion='<div class="hint" style="margin:0 0 12px;color:var(--neon2)">⤴ Beat last time: try '+fmtDec(nextW)+' kg'+(top.reps?(' × '+top.reps):'')+'</div>';
     }
     const chart=withW.length?miniChart(withW.map(p=>({label:p.k,value:p.w}))):'';
-    const rows=points.slice().reverse().map(p=>'<div class="weekrow"><span class="muted">'+prettyDate(p.k)+'</span><span class="kg">'+(p.w!=null?p.w+' kg':'—')+'</span></div>').join('');
+    const rows=points.slice().reverse().map(p=>'<div class="weekrow"><span class="muted">'+prettyDate(p.k)+'</span><span class="kg">'+(p.w!=null?fmtDec(p.w)+' kg':'—')+'</span></div>').join('');
     body.innerHTML=statLine+suggestion+chart+rows;
   }
   document.getElementById('exModal').hidden=false;
@@ -648,7 +672,7 @@ function renderWeightChart(){
   let grid='',labels='';
   [yMax,+center.toFixed(1),yMin].forEach(v=>{ const y=Y(v);
     grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" class="cg"/>';
-    labels+='<text x="'+(padL-6)+'" y="'+(y+3)+'" class="cl" text-anchor="end">'+v+'</text>'; });
+    labels+='<text x="'+(padL-6)+'" y="'+(y+3)+'" class="cl" text-anchor="end">'+fmtDec(v)+'</text>'; });
   const line=keys.map((k,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(vals[i]).toFixed(1)).join(' ');
   const area='M'+X(0).toFixed(1)+' '+(padT+ph)+' '+keys.map((k,i)=>'L'+X(i).toFixed(1)+' '+Y(vals[i]).toFixed(1)).join(' ')+' L'+X(n-1).toFixed(1)+' '+(padT+ph)+' Z';
   const dots=keys.map((k,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(vals[i]).toFixed(1)+'" r="3.5" class="cd"/>').join('');
@@ -657,7 +681,7 @@ function renderWeightChart(){
   let goalLine='';
   if(goal>=yMin && goal<=yMax){ const gy=+Y(goal).toFixed(1);
     goalLine='<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" class="cgoal"/>'
-      +'<text x="'+(W-padR)+'" y="'+(gy-4)+'" class="cl" text-anchor="end" fill="var(--neon2)">goal '+goal+'</text>'; }
+      +'<text x="'+(W-padR)+'" y="'+(gy-4)+'" class="cl" text-anchor="end" fill="var(--neon2)">goal '+fmtDec(goal)+'</text>'; }
   box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+goalLine+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
 }
 
@@ -690,7 +714,7 @@ function renderWeight(){
   document.getElementById('goalVal').textContent=goal;
   renderWeightChart();
   const mk=mondayKey(), cur=weights[mk];
-  document.getElementById('weightNow').innerHTML=(cur!=null?cur:'—')+'<span class="unit"> kg</span>';
+  document.getElementById('weightNow').innerHTML=(cur!=null?fmtDec(cur):'—')+'<span class="unit"> kg</span>';
   document.getElementById('weightWeek').textContent='Week of '+prettyDate(mk);
   const st=document.getElementById('weightStatus');
   if(cur!=null){ st.textContent='Logged'; st.className='pill ok'; }
@@ -703,9 +727,9 @@ function renderWeight(){
   hist.innerHTML='';
   keys.forEach((k,i)=>{
     const prev=keys[i+1]; let delta='';
-    if(prev!=null){ const dv=+(weights[k]-weights[prev]).toFixed(1); if(dv!==0)delta='<span class="delta '+(dv>0?'up':'down')+'">'+(dv>0?'+':'')+dv+'</span>'; }
+    if(prev!=null){ const dv=+(weights[k]-weights[prev]).toFixed(1); if(dv!==0)delta='<span class="delta '+(dv>0?'up':'down')+'">'+(dv>0?'+':'')+fmtDec(dv)+'</span>'; }
     const row=document.createElement('div'); row.className='weekrow';
-    row.innerHTML='<span class="wk">'+prettyDate(k)+'</span><span class="kg">'+weights[k]+' kg'+delta+'</span>';
+    row.innerHTML='<span class="wk">'+prettyDate(k)+'</span><span class="kg">'+fmtDec(weights[k])+' kg'+delta+'</span>';
     hist.appendChild(row);
   });
 }
@@ -726,7 +750,7 @@ function periodStats(pred){
   return {workouts, volume};
 }
 function renderWeekSummary(){
-  const box=document.getElementById('weekSummary');
+  const box=document.getElementById('statSummary');
   const now=new Date();
   const mon=mondayOf(); const sun=new Date(mon); sun.setDate(mon.getDate()+6);
   const wStart=todayKey(mon), wEnd=todayKey(sun);
@@ -736,12 +760,73 @@ function renderWeekSummary(){
   const year =periodStats(k=>k.slice(0,4)===yr);
   const life =periodStats(()=>true);
   const row=(label,st,cls)=>'<div class="sum-row'+(cls?' '+cls:'')+'"><span class="per">'+label+'</span>'
-    +'<span class="stat"><b>'+st.workouts+'</b> workout'+(st.workouts===1?'':'s')+' · <b>'+Math.round(st.volume).toLocaleString()+'</b> kg</span></div>';
+    +'<span class="stat"><b>'+st.workouts+'</b> workout'+(st.workouts===1?'':'s')+' · <b>'+fmtNum(st.volume)+'</b> kg</span></div>';
   box.innerHTML=row('This Week',week)+row('This Month',month)+row('This Year',year)+row('Lifetime',life,'life');
+}
+
+/* stats page helpers */
+function currentShakeStreak(){ let s=0,d=new Date(); while(shakes[todayKey(d)]){ s++; d.setDate(d.getDate()-1);} return s; }
+function longestShakeStreak(){
+  const days=Object.keys(shakes).filter(k=>shakes[k]).sort();
+  if(!days.length) return 0;
+  let best=1,cur=1;
+  for(let i=1;i<days.length;i++){ const p=new Date(days[i-1]+'T00:00:00'); p.setDate(p.getDate()+1);
+    if(todayKey(p)===days[i]){ cur++; best=Math.max(best,cur);} else cur=1; }
+  return best;
+}
+function longestWeeklyStreak(){
+  const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
+  if(!days.length) return 0;
+  let mon=mondayOf(new Date(days[0]+'T00:00:00')); const end=mondayOf();
+  let best=0,cur=0;
+  while(mon<=end){ if(workoutsInWeek(mon)>=weeklyGoal){ cur++; best=Math.max(best,cur);} else cur=0;
+    mon=new Date(mon); mon.setDate(mon.getDate()+7); }
+  return best;
+}
+function totalPRs(){
+  let total=0; const byName={};
+  Object.keys(exercises).sort().forEach(k=>exercises[k].forEach(it=>{ if(it.weight==null) return;
+    const n=norm(it.name);
+    if(byName[n]==null){ byName[n]=it.weight; } else if(it.weight>byName[n]){ total++; byName[n]=it.weight; } }));
+  return total;
+}
+function favoriteExercise(){
+  const cnt={}; let bn=null,bc=0;
+  Object.values(exercises).forEach(a=>a.forEach(it=>{ cnt[it.name]=(cnt[it.name]||0)+1; if(cnt[it.name]>bc){bc=cnt[it.name];bn=it.name;} }));
+  return bn?{name:bn,count:bc}:null;
+}
+function renderStats(){
+  renderWeekSummary();
+  const css=currentShakeStreak(), bss=longestShakeStreak(), cws=weeklyStreak(), bws=longestWeeklyStreak();
+  document.getElementById('statStreaks').innerHTML=
+    '<div class="stat-line"><span>🥤 Shake streak</span><span class="v">'+css+' d · best '+bss+' d</span></div>'
+    +'<div class="stat-line"><span>🏆 Shake rank</span><span class="v">'+shakeTier(css)+'</span></div>'
+    +'<div class="stat-line"><span>🏋️ Workout streak</span><span class="v">'+cws+' wk · best '+bws+' wk</span></div>';
+  let totVol=0,heaviest=0,best1=0; const nameSet=new Set();
+  Object.values(exercises).forEach(a=>a.forEach(it=>{ totVol+=vol(it);
+    if(it.weight!=null){ heaviest=Math.max(heaviest,it.weight); const e=e1rm(it); if(e>best1)best1=e; }
+    nameSet.add(norm(it.name)); }));
+  const totWorkouts=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).length;
+  const totShakes=Object.keys(shakes).filter(k=>shakes[k]).length;
+  const active=new Set([...Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length), ...Object.keys(shakes).filter(k=>shakes[k])]).size;
+  const weighins=Object.keys(weights).length;
+  const tiles=[
+    [fmtNum(totWorkouts),'Workouts'],[fmtNum(totVol),'kg lifted'],
+    [fmtNum(totShakes),'Shakes'],[fmtNum(active),'Active days'],
+    [fmtDec(heaviest),'kg heaviest'],[fmtNum(best1),'kg best 1RM'],
+    [fmtNum(totalPRs()),'PRs hit'],[fmtNum(nameSet.size),'Exercises']
+  ];
+  let html='<div class="stat-grid">'+tiles.map(t=>'<div class="stat-tile"><div class="n">'+t[0]+'</div><div class="l">'+t[1]+'</div></div>').join('')+'</div>';
+  const fav=favoriteExercise();
+  if(fav) html+='<div class="stat-line" style="margin-top:14px"><span>⭐ Favourite</span><span class="v">'+fav.name+' ×'+fav.count+'</span></div>';
+  const wk=Object.keys(weights).sort();
+  if(wk.length>=2){ const chg=+(weights[wk[wk.length-1]]-weights[wk[0]]).toFixed(1);
+    html+='<div class="stat-line"><span>⚖️ Weight change</span><span class="v">'+(chg>0?'+':'')+fmtDec(chg)+' kg</span></div>'; }
+  else if(weighins){ html+='<div class="stat-line"><span>⚖️ Weigh-ins</span><span class="v">'+weighins+'</span></div>'; }
+  document.getElementById('statMilestones').innerHTML=html;
 }
 function renderLog(){
   calRef=new Date(); calRef.setDate(1);   // reset to current month each time Log opens
-  renderWeekSummary();
   renderCalendar();
   const el=document.getElementById('workoutLog');
   const days=Object.keys(exercises).sort().reverse();
@@ -752,7 +837,7 @@ function renderLog(){
     const shk=shakes[day]?' · 🥤':'';
     const cnt=exercises[day].length;
     const totVol=exercises[day].reduce((s,it)=>s+vol(it),0);
-    const kgStr=totVol>0?' · '+Math.round(totVol)+' kg':'';
+    const kgStr=totVol>0?' · '+fmtNum(totVol)+' kg':'';
     head.innerHTML='<span class="wk">'+prettyDate(day)+shk+'</span><span class="muted">'+cnt+' exercise'+(cnt>1?'s':'')+kgStr+'</span>';
     el.appendChild(head);
     exercises[day].forEach(it=>{
