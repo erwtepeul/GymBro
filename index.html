@@ -232,7 +232,8 @@
   .goalw-count{font-size:20px;font-weight:900;color:var(--ink)}
   .goalw-count b{color:var(--neon2)}
   .goalw-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:2px}
-  .goalw-streak{font-size:12px;font-weight:800;color:var(--neon2);margin-top:6px;text-transform:uppercase;letter-spacing:1px;min-height:15px}
+  .goalw-streak{font-size:12px;font-weight:800;color:var(--neon2);margin-top:6px;text-transform:uppercase;letter-spacing:1px}
+  .goalw-info{display:flex;flex-direction:column;justify-content:center}
   .goalw .ghost{padding:8px 14px;font-size:13px;flex:0 0 auto}
 
   /* entry edit button */
@@ -248,18 +249,18 @@
   .set-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
   .set-row:last-child{border-bottom:none}
   .set-row .val{display:flex;align-items:center;gap:4px;color:var(--muted)}
-  .set-row .val b{color:var(--neon2);font-size:16px}
+  .set-row .val b{color:var(--neon);font-size:16px}
   .set-row .ghost{padding:8px 14px;font-size:13px;margin-left:8px}
   .copyr{text-align:center;font-size:10px;color:var(--muted);margin-top:6px;font-weight:600;letter-spacing:.5px}
 
   /* nav */
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;border-top:1px solid var(--line);
     background:rgba(10,10,15,.92);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom)}
-  nav button{flex:1;background:none;color:var(--muted);border:none;border-radius:0;box-shadow:none;
-    padding:12px 0 10px;font-size:10px;font-weight:800;letter-spacing:1px;
-    display:flex;flex-direction:column;align-items:center;gap:5px;text-transform:uppercase}
-  nav button .ico{width:26px;height:26px;opacity:.85}
-  nav button .ico svg{width:26px;height:26px;display:block}
+  nav button{flex:1;min-width:0;background:none;color:var(--muted);border:none;border-radius:0;box-shadow:none;
+    padding:12px 0 10px;font-size:9px;font-weight:800;letter-spacing:.2px;white-space:nowrap;
+    display:flex;flex-direction:column;align-items:center;gap:4px;text-transform:uppercase}
+  nav button .ico{width:24px;height:24px;opacity:.85}
+  nav button .ico svg{width:24px;height:24px;display:block}
   nav button.active{color:var(--neon)}
   nav button.active .ico{opacity:1;filter:drop-shadow(var(--glow))}
 </style>
@@ -404,7 +405,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.12.0</div>
+    <div class="ver-foot" id="verLabel">v1.12.1</div>
     <div class="copyr">© Koot | All rights reserved.</div>
   </section>
 </main>
@@ -446,7 +447,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.12.0';
+const APP_VERSION='1.12.1';
 
 /* storage */
 const DB={
