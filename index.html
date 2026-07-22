@@ -114,15 +114,15 @@
   .empty{color:var(--muted);font-size:14px;padding:14px 0;font-weight:600}
 
   /* shake */
-  .shake{display:flex;flex-direction:column;align-items:center;gap:7px;padding:8px}
-  .shake .glass{font-size:28px;filter:grayscale(1) brightness(.7);opacity:.5;transition:.25s}
+  .shake{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 8px 10px}
+  .shake .glass{font-size:28px;filter:grayscale(1) brightness(.7);opacity:.5;transition:.25s;margin-bottom:3px}
   .shake.done .glass{filter:none;opacity:1;transform:scale(1.06)}
-  .shake .label{font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+  .shake .label{font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:13px}
   .shake.done .label{color:var(--neon)}
   .toggle{width:100%;padding:10px;border-radius:14px;border:2px solid var(--line);
     background:transparent;color:var(--ink);box-shadow:none}
   .shake.done .toggle{background:var(--neon);color:#04120a;border-color:var(--neon);box-shadow:var(--glow)}
-  .streak-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:3px}
+  .streak-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:16px}
   .streak{font-size:13px;color:var(--neon2);font-weight:800;text-transform:uppercase;letter-spacing:1px}
   .streak-title{font-size:12px;color:var(--neon);font-weight:800;text-transform:uppercase;letter-spacing:1.5px;
     text-shadow:0 0 8px currentColor}
@@ -411,7 +411,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.13.2</div>
+    <div class="ver-foot" id="verLabel">v1.13.3</div>
     <div class="copyr">© Koot | All rights reserved.</div>
   </section>
 </main>
@@ -453,7 +453,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.13.2';
+const APP_VERSION='1.13.3';
 
 /* storage */
 const DB={
