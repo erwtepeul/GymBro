@@ -168,7 +168,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.3.4</span>
+      <span class="ver" id="verLabel">v1.3.5</span>
     </div>
   </div>
 </header>
@@ -250,7 +250,7 @@
 </nav>
 
 <script>
-const APP_VERSION='1.3.4';
+const APP_VERSION='1.3.5';
 
 /* storage */
 const DB={
@@ -450,7 +450,20 @@ document.getElementById('resetBtn').onclick=()=>{
 };
 
 renderShake(); renderExercises();
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+
+/* service worker + auto-update */
+if('serviceWorker' in navigator){
+  const hadController=!!navigator.serviceWorker.controller;
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(reloaded) return;
+    if(hadController){ reloaded=true; location.reload(); }  // a new version took over -> refresh once
+  });
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    reg.update();                                   // check for a newer SW on every launch
+    setInterval(()=>reg.update(), 60*60*1000);      // and hourly while open
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>
