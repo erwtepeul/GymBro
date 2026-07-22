@@ -209,8 +209,8 @@
   .goalw{display:flex;align-items:center;gap:16px}
   .goalw .ring{width:72px;height:72px;flex:0 0 auto}
   .goalw .rbg{fill:none;stroke:var(--line);stroke-width:9}
-  .goalw .rfg{fill:none;stroke:var(--neon);stroke-width:9;stroke-linecap:round;
-    transform:rotate(-90deg);transform-origin:50% 50%;filter:drop-shadow(0 0 4px rgba(57,255,20,.6));transition:stroke-dashoffset .4s}
+  .goalw .rfg{fill:none;stroke:var(--neon2);stroke-width:9;stroke-linecap:round;
+    transform:rotate(-90deg);transform-origin:50% 50%;filter:drop-shadow(0 0 4px rgba(0,240,255,.6));transition:stroke-dashoffset .4s}
   .goalw .rtxt{fill:var(--ink);font-size:22px;font-weight:900}
   .goalw-info{flex:1}
   .goalw-count{font-size:20px;font-weight:900;color:var(--ink)}
@@ -248,7 +248,7 @@
     </svg>
     <div class="namecol">
       <span class="wordmark">Gym<b>Bro</b></span>
-      <span class="ver" id="verLabel">v1.10.0</span>
+      <span class="ver" id="verLabel">v1.10.1</span>
     </div>
   </div>
 </header>
@@ -348,11 +348,11 @@
     <h2>This Year</h2>
     <div class="card"><div id="statYear"></div></div>
 
-    <h2>Volume Trend</h2>
-    <div class="card"><div id="statTrend"></div></div>
-
     <h2>Muscle Balance</h2>
     <div class="card"><div id="statPie"></div></div>
+
+    <h2>Volume Trend</h2>
+    <div class="card"><div id="statTrend"></div></div>
 
     <h2>Milestones</h2>
     <div class="card"><div id="statMilestones"></div></div>
@@ -403,7 +403,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.10.0';
+const APP_VERSION='1.10.1';
 
 /* storage */
 const DB={
