@@ -32,17 +32,11 @@
     --glow-cy:0 0 12px rgba(34,211,238,.5), 0 0 26px rgba(34,211,238,.2);
     --ga:rgba(168,85,247,.12); --gb:rgba(34,211,238,.08); --focus:rgba(168,85,247,.15);
   }
-  html[data-theme="ice"]{
-    --neon:#38bdf8; --neon2:#22d3ee;
-    --glow:0 0 12px rgba(56,189,248,.55), 0 0 26px rgba(56,189,248,.25);
-    --glow-cy:0 0 12px rgba(34,211,238,.5), 0 0 26px rgba(34,211,238,.2);
-    --ga:rgba(56,189,248,.10); --gb:rgba(34,211,238,.08); --focus:rgba(56,189,248,.15);
-  }
-  html[data-theme="mono"]{
-    --neon:#ffffff; --neon2:#aab2bd;
-    --glow:0 0 12px rgba(255,255,255,.5), 0 0 26px rgba(255,255,255,.22);
-    --glow-cy:0 0 12px rgba(170,178,189,.45), 0 0 26px rgba(170,178,189,.18);
-    --ga:rgba(255,255,255,.08); --gb:rgba(170,178,189,.06); --focus:rgba(255,255,255,.16);
+  html[data-theme="night"]{
+    --neon:#e6e6ea; --neon2:#9aa0aa;
+    --glow:0 0 2px rgba(255,255,255,.15);
+    --glow-cy:0 0 2px rgba(255,255,255,.10);
+    --ga:rgba(255,255,255,.04); --gb:rgba(255,255,255,.03); --focus:rgba(255,255,255,.12);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
@@ -252,11 +246,11 @@
   li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none}
 
   /* settings */
-  .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .theme-opt{flex:1;background:var(--bg2);border:2px solid var(--line);border-radius:14px;
-    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;
-    color:var(--muted);text-transform:none;letter-spacing:0;font-size:12px;font-weight:800;box-shadow:none}
-  .theme-opt .sw{width:100%;height:22px;border-radius:8px}
+  .themes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .theme-opt{background:var(--bg2);border:2px solid var(--line);border-radius:12px;
+    padding:10px 3px;display:flex;flex-direction:column;align-items:center;gap:7px;
+    color:var(--muted);text-transform:none;letter-spacing:0;font-size:11px;font-weight:800;box-shadow:none}
+  .theme-opt .sw{width:100%;height:20px;border-radius:7px}
   .theme-opt.active{border-color:var(--neon);color:var(--ink)}
   .set-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
   .set-row:last-child{border-bottom:none}
@@ -417,7 +411,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.13.0</div>
+    <div class="ver-foot" id="verLabel">v1.13.1</div>
     <div class="copyr">© Koot | All rights reserved.</div>
   </section>
 </main>
@@ -459,7 +453,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.13.0';
+const APP_VERSION='1.13.1';
 
 /* storage */
 const DB={
@@ -491,7 +485,8 @@ let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 /* theme */
-const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'ice',name:'Ice',a:'#38bdf8',b:'#22d3ee'},{id:'mono',name:'Mono',a:'#ffffff',b:'#8a8f98'}];
+const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'}];
+if(!THEMES.some(t=>t.id===theme)){ theme='neon'; DB.set('theme',theme); }
 function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
 applyTheme();
 
