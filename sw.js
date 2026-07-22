@@ -1,10 +1,12 @@
-const CACHE = 'gymbro-v13';
+const CACHE = 'gymbro-v14';
 const ASSETS = [
   'index.html',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png'
 ];
+
+self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
 
 self.addEventListener('install', e => {
   self.skipWaiting();
