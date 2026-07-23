@@ -202,6 +202,8 @@
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .stat-tile{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
   .stat-tile .n{font-size:23px;font-weight:900;color:var(--neon2);text-shadow:var(--glow-cy);line-height:1}
+  .stat-tile .n.txt{font-size:15px}
+  .stat-tile.wide{grid-column:1 / -1}
   .stat-tile .l{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
   .stat-line{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
   .stat-line:last-child{border-bottom:none}
@@ -445,7 +447,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.18.0</div>
+    <div class="ver-foot" id="verLabel">v1.18.1</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -491,7 +493,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.18.0';
+const APP_VERSION='1.18.1';
 
 /* storage */
 const DB={
@@ -853,7 +855,9 @@ function miniChart(points){
   const X=i=> n===1?padL+pw/2:padL+i*(pw/(n-1));
   const Y=v=> padT+(yMax-v)/(yMax-yMin)*ph;
   let grid='',labels='';
-  [yMax,yMin].forEach(v=>{ const y=Y(v); grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" class="cg"/>'; labels+='<text x="'+(padL-6)+'" y="'+(y+3)+'" class="cl" text-anchor="end">'+fmtDec(v)+'</text>'; });
+  const div=4;
+  for(let i=0;i<=div;i++){ const v=yMin+(yMax-yMin)*i/div; const y=Y(v); grid+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" class="cg"/>'; }
+  [yMax,+((yMin+yMax)/2).toFixed(1),yMin].forEach(v=>{ const y=Y(v); labels+='<text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" class="cl" text-anchor="end">'+fmtDec(v)+'</text>'; });
   const line=points.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.value).toFixed(1)).join(' ');
   const dots=points.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.value).toFixed(1)+'" r="3" class="cd"/>').join('');
   const xl=i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" class="cl" text-anchor="middle">'+new Date(points[i].label+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</text>';
@@ -1169,19 +1173,22 @@ function renderStats(){
   const totShakes=Object.keys(shakes).filter(k=>shakes[k]).length;
   const active=new Set([...Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length), ...Object.keys(shakes).filter(k=>shakes[k])]).size;
   const weighins=Object.keys(weights).length;
-  const tiles=[
-    [fmtNum(totWorkouts),'Workouts'],[fmtNum(totVol),'kg lifted'],
-    [fmtNum(totShakes),'Shakes'],[fmtNum(active),'Active days'],
-    [fmtDec(heaviest),'kg heaviest'],[fmtNum(totalPRs()),'PRs hit']
-  ];
-  let html='<div class="stat-grid">'+tiles.map(t=>'<div class="stat-tile"><div class="n">'+t[0]+'</div><div class="l">'+t[1]+'</div></div>').join('')+'</div>';
   const fav=favoriteExercise();
-  if(fav) html+='<div class="stat-line" style="margin-top:14px"><span>⭐ Favourite</span><span class="v">'+fav.name+' ×'+fav.count+'</span></div>';
   const wk=Object.keys(weights).sort();
-  if(wk.length>=2){ const chg=+(weights[wk[wk.length-1]]-weights[wk[0]]).toFixed(1);
-    html+='<div class="stat-line"><span>⚖️ Weight change</span><span class="v">'+(chg>0?'+':'')+fmtDec(chg)+' kg</span></div>'; }
-  else if(weighins){ html+='<div class="stat-line"><span>⚖️ Weigh-ins</span><span class="v">'+weighins+'</span></div>'; }
-  document.getElementById('statMilestones').innerHTML=html;
+  let chgStr='—';
+  if(wk.length>=2){ const chg=+(weights[wk[wk.length-1]]-weights[wk[0]]).toFixed(1); chgStr=(chg>0?'+':'')+fmtDec(chg)+' kg'; }
+  const tiles=[
+    [fmtNum(active),'Active days',''],
+    [fmtDec(heaviest),'kg heaviest',''],
+    [fmtNum(totalPRs()),'PRs hit',''],
+    [fav?fav.name:'—','Favourite','txt'],
+    [chgStr,'Weight change','txt wide']
+  ];
+  document.getElementById('statMilestones').innerHTML='<div class="stat-grid">'+tiles.map(t=>{
+    const tc='stat-tile'+(t[2].indexOf('wide')>=0?' wide':'');
+    const nc='n'+(t[2].indexOf('txt')>=0?' txt':'');
+    return '<div class="'+tc+'"><div class="'+nc+'">'+t[0]+'</div><div class="l">'+t[1]+'</div></div>';
+  }).join('')+'</div>';
 }
 function renderLog(){
   calRef=new Date(); calRef.setDate(1);   // reset to current month each time Log opens
