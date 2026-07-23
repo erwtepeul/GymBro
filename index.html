@@ -8,7 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymBro">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" id="appleicon" href="icons/icon-192.png">
+<link rel="icon" id="favicon" href="icons/favicon.png">
 <title>GymBro</title>
 <style>
   :root{
@@ -76,6 +77,14 @@
     height:100vh; height:100dvh; overflow:hidden;
     padding-top:env(safe-area-inset-top);
   }
+  /* splash */
+  #splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    background:radial-gradient(900px 500px at 50% 38%, var(--ga), transparent 62%), var(--bg);transition:opacity .45s ease}
+  #splash.hide{opacity:0;pointer-events:none}
+  #splash .brand-svg{width:64px;height:64px;filter:drop-shadow(var(--glow))}
+  #splash .wordmark{font-size:34px}
+  #splash .sp-tag{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+
   /* header / wordmark */
   header{position:relative;flex:0 0 auto;padding:28px 20px 8px;text-align:center}
   .brand{display:inline-flex;align-items:center;gap:12px}
@@ -339,6 +348,11 @@
 </style>
 </head>
 <body>
+<div id="splash">
+  <svg class="brand-svg" viewBox="0 0 100 100" aria-hidden="true"><g fill="var(--neon)"><rect x="6" y="38" width="13" height="24" rx="6"/><rect x="24" y="28" width="13" height="44" rx="6"/><rect x="37" y="45" width="26" height="10" rx="5"/><rect x="63" y="28" width="13" height="44" rx="6"/><rect x="81" y="38" width="13" height="24" rx="6"/></g></svg>
+  <span class="wordmark">Gym<b>Bro</b></span>
+  <span class="sp-tag">Built different. Tracked better.</span>
+</div>
 <header>
   <div class="brand">
     <svg viewBox="0 0 100 100" aria-hidden="true">
@@ -511,7 +525,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.24.3</div>
+    <div class="ver-foot" id="verLabel">v1.25.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -577,7 +591,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.24.3';
+const APP_VERSION='1.25.0';
 
 /* storage */
 const DB={
@@ -618,7 +632,25 @@ let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 /* theme */
 const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'crimson',name:'Crimson',a:'#ff2e50',b:'#ff9db0'},{id:'forest',name:'Forest',a:'#34d399',b:'#a7f3d0'},{id:'sunset',name:'Sunset',a:'#ff6ec7',b:'#ffa94d'}];
 if(!THEMES.some(t=>t.id===theme)){ theme='neon'; DB.set('theme',theme); }
-function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
+function drawIcon(size,color,bg){
+  const c=document.createElement('canvas'); c.width=size; c.height=size; const g=c.getContext('2d');
+  if(bg){ g.fillStyle=bg; g.fillRect(0,0,size,size); }
+  const s=size/100;
+  const rr=(x,y,w,h,r)=>{ if(g.roundRect){g.beginPath();g.roundRect(x,y,w,h,r);}else{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();} };
+  g.fillStyle=color;
+  [[6,38,13,24,6],[24,28,13,44,6],[37,45,26,10,5],[63,28,13,44,6],[81,38,13,24,6]].forEach(r=>{ rr(r[0]*s,r[1]*s,r[2]*s,r[3]*s,r[4]*s); g.fill(); });
+  return c;
+}
+function updateFavicon(){
+  try{
+    const cs=getComputedStyle(document.documentElement);
+    const neon=(cs.getPropertyValue('--neon').trim())||'#39ff14';
+    const bg=(cs.getPropertyValue('--bg').trim())||'#0a0a0f';
+    const fav=document.getElementById('favicon'); if(fav) fav.href=drawIcon(64,neon,bg).toDataURL('image/png');
+    const ai=document.getElementById('appleicon'); if(ai) ai.href=drawIcon(180,neon,bg).toDataURL('image/png');
+  }catch(e){}
+}
+function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); updateFavicon(); }
 applyTheme();
 function applyGlow(){ document.documentElement.classList.toggle('reduce-glow', reduceGlow); }
 applyGlow();
@@ -1510,6 +1542,9 @@ document.getElementById('importFile').onchange=e=>{
 };
 
 updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner();
+
+/* themed splash */
+setTimeout(()=>{ const sp=document.getElementById('splash'); if(sp){ sp.classList.add('hide'); setTimeout(()=>sp.remove(),500); } }, 700);
 
 /* service worker + auto-update */
 if('serviceWorker' in navigator){
