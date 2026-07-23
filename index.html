@@ -137,6 +137,11 @@
   li.entry .acts{display:flex;align-items:center;gap:0}
   li.entry .del{background:none;color:var(--muted);border:none;padding:6px;font-size:16px;box-shadow:none}
   .empty{color:var(--muted);font-size:14px;padding:14px 0;font-weight:600}
+  .empty-state{text-align:center;padding:20px 8px}
+  .empty-state .es-icon{font-size:40px;filter:grayscale(1);opacity:.5}
+  .empty-state .es-title{font-weight:800;font-size:16px;margin-top:8px;color:var(--ink)}
+  .empty-state .es-sub{color:var(--muted);font-size:13px;font-weight:600;margin-top:4px}
+  .empty-state .es-btn{margin-top:16px}
 
   /* shake */
   .shake{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 8px 10px}
@@ -511,7 +516,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.26.1</div>
+    <div class="ver-foot" id="verLabel">v1.26.2</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -577,7 +582,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.26.1';
+const APP_VERSION='1.26.2';
 
 /* storage */
 const DB={
@@ -905,7 +910,15 @@ function updateExNames(){
 function renderList(elId, day){
   const list=document.getElementById(elId); if(!list) return;
   const items=exercises[day]||[];
-  if(!items.length){ list.innerHTML='<div class="empty">Nothing logged'+(day===todayKey()?' today':'')+'.</div>'; return; }
+  if(!items.length){
+    if(elId==='exList'){
+      list.innerHTML='<div class="empty-state"><div class="es-icon">🏋️</div><div class="es-title">Nothing logged today</div><div class="es-sub">Let\'s get after it.</div><button class="es-btn" id="esAdd">＋ Log your first exercise</button></div>';
+      const b=document.getElementById('esAdd'); if(b) b.onclick=()=>{ buzz(12); showView('add'); };
+    } else {
+      list.innerHTML='<div class="empty">Nothing logged'+(day===todayKey()?' today':'')+' — add one above.</div>';
+    }
+    return;
+  }
   list.innerHTML='';
   items.forEach((it,i)=>{
     const isBest = it.weight!=null && it.weight===bestFor(it.name);
