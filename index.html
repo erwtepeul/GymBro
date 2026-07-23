@@ -485,7 +485,8 @@
     <h2>Data</h2>
     <div class="card">
       <div class="set-row"><span>🗂️ Manage exercises</span><button id="manageBtn" class="ghost">Open</button></div>
-      <div class="set-row"><span>🧪 Sample data</span><button id="reloadSample" class="ghost">Reload</button></div>
+      <div class="set-row"><span>🧪 Load sample data</span><button id="reloadSample" class="ghost">Load</button></div>
+      <div class="set-row"><span>🧹 Remove sample data</span><button id="removeSample" class="ghost">Remove</button></div>
     </div>
 
     <h2>Backup</h2>
@@ -500,7 +501,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.21.0</div>
+    <div class="ver-foot" id="verLabel">v1.22.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -555,7 +556,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.21.0';
+const APP_VERSION='1.22.0';
 
 /* storage */
 const DB={
@@ -622,6 +623,7 @@ function seedTestData(){
   const splits=[['Chest','Shoulders','Arms'],['Back','Arms','Core'],['Legs','Core','Cardio']];
   const weeks=14, startMon=mondayOf(); startMon.setDate(startMon.getDate()-7*(weeks-1));
   const today=todayKey();
+  const seededW=[], seededS=[];
   for(let w=0;w<weeks;w++){
     const prog=weeks>1?w/(weeks-1):1;
     [0,2,4].forEach((off,di)=>{
@@ -630,18 +632,31 @@ function seedTestData(){
       const groups=splits[di%3], entries=[];
       groups.forEach(g=>{
         const name=pick(pool[g]);
-        if(g==='Cardio'){ entries.push({name,group:'Cardio',weight:null,sets:null,reps:null,dist:+(rnd(3,10)+Math.random()).toFixed(1),mins:rnd(20,45)}); }
-        else { const base=baseW[name]||20; const wt=base>0?Math.round((base*(1+prog*0.15)+rnd(-2,2))*2)/2:null; entries.push({name,group:g,weight:wt,sets:rnd(3,5),reps:rnd(5,12),dist:null,mins:null}); }
+        if(g==='Cardio'){ entries.push({name,group:'Cardio',weight:null,sets:null,reps:null,dist:+(rnd(3,10)+Math.random()).toFixed(1),mins:rnd(20,45),s:1}); }
+        else { const base=baseW[name]||20; const wt=base>0?Math.round((base*(1+prog*0.15)+rnd(-2,2))*2)/2:null; entries.push({name,group:g,weight:wt,sets:rnd(3,5),reps:rnd(5,12),dist:null,mins:null,s:1}); }
       });
-      if(Math.random()<0.5){ const g=pick(groups.filter(x=>x!=='Cardio')); const name=pick(pool[g]); const base=baseW[name]||20; entries.push({name,group:g,weight:base>0?Math.round((base*(1+prog*0.15))*2)/2:null,sets:rnd(3,4),reps:rnd(6,12),dist:null,mins:null}); }
+      if(Math.random()<0.5){ const g=pick(groups.filter(x=>x!=='Cardio')); const name=pick(pool[g]); const base=baseW[name]||20; entries.push({name,group:g,weight:base>0?Math.round((base*(1+prog*0.15))*2)/2:null,sets:rnd(3,4),reps:rnd(6,12),dist:null,mins:null,s:1}); }
       exercises[k]=entries;
     });
     const monDate=new Date(startMon); monDate.setDate(startMon.getDate()+7*w); const mk=todayKey(monDate);
-    if(mk<=today && weights[mk]==null) weights[mk]=+(80-prog*4+(Math.random()*0.8-0.4)).toFixed(1);
+    if(mk<=today && weights[mk]==null){ weights[mk]=+(80-prog*4+(Math.random()*0.8-0.4)).toFixed(1); seededW.push(mk); }
   }
   for(let i=0;i<7*weeks;i++){ const d=new Date(startMon); d.setDate(startMon.getDate()+i); const k=todayKey(d);
-    if(k>today) break; if(shakes[k]==null && Math.random()<0.85) shakes[k]=true; }
+    if(k>today) break; if(shakes[k]==null && Math.random()<0.85){ shakes[k]=true; seededS.push(k); } }
   DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes);
+  DB.set('sampleW',[...new Set([...(DB.get('sampleW',[])||[]),...seededW])]);
+  DB.set('sampleS',[...new Set([...(DB.get('sampleS',[])||[]),...seededS])]);
+}
+function hasSampleData(){
+  if(Object.values(exercises).some(a=>a.some(it=>it.s))) return true;
+  return (DB.get('sampleW',[])||[]).length>0 || (DB.get('sampleS',[])||[]).length>0;
+}
+function removeSampleData(){
+  Object.keys(exercises).forEach(k=>{ exercises[k]=exercises[k].filter(it=>!it.s); if(!exercises[k].length) delete exercises[k]; });
+  (DB.get('sampleW',[])||[]).forEach(k=>{ delete weights[k]; });
+  (DB.get('sampleS',[])||[]).forEach(k=>{ delete shakes[k]; });
+  DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes);
+  DB.set('sampleW',[]); DB.set('sampleS',[]);
 }
 const FILL_SEED='filltest-v1';
 if(localStorage.getItem('gymbro_'+FILL_SEED)!=='done'){
@@ -709,7 +724,12 @@ document.getElementById('backupEdit').onclick=()=>{
 };
 document.getElementById('reloadSample').onclick=()=>{
   if(!confirm('Load sample workout data? It fills empty days and keeps anything you already logged.')) return;
-  seedTestData(); updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); showToast('Sample data loaded ✓');
+  seedTestData(); updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); showToast('Sample data loaded ✓');
+};
+document.getElementById('removeSample').onclick=()=>{
+  if(!hasSampleData()){ showToast('No tagged sample data found'); return; }
+  if(!confirm('Remove all sample data? Your own logged entries stay.')) return;
+  removeSampleData(); updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); showToast('Sample data removed ✓');
 };
 
 /* manage exercises */
