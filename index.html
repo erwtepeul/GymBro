@@ -165,6 +165,12 @@
     box-shadow:var(--glow);opacity:0;pointer-events:none;transition:.3s;z-index:60;
     text-transform:uppercase;letter-spacing:.5px;font-size:13px;max-width:88%;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast-undo{background:var(--bg);color:var(--neon);border:none;border-radius:8px;padding:5px 11px;margin-left:10px;
+    font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;box-shadow:none}
+  html.reduce-glow{--glow:none;--glow-cy:none}
+  html.reduce-glow .cline,html.reduce-glow .goalw .rfg,html.reduce-glow .brand svg{filter:none}
+  html.reduce-glow .stat-tile .n,html.reduce-glow .streak-title{text-shadow:none}
+  html.reduce-glow .view{animation:none}
 
   /* weight chart */
   .chart{width:100%;height:auto;overflow:visible;display:block}
@@ -299,6 +305,9 @@
   .set-row .val{display:flex;align-items:center;gap:4px;color:var(--muted)}
   .set-row .val b{color:var(--neon);font-size:16px}
   .set-row .ghost{padding:8px 14px;font-size:13px;margin-left:8px}
+  .mg-acts{display:flex;align-items:center;gap:6px}
+  .mg-ren{background:transparent;color:var(--neon2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;box-shadow:none;text-transform:none;letter-spacing:0}
+  .mg-del{background:none;color:var(--danger);border:none;padding:6px;font-size:15px;box-shadow:none}
   .copyr{text-align:center;font-size:10px;color:var(--muted);margin-top:6px;font-weight:600;letter-spacing:.5px}
 
   /* nav */
@@ -457,6 +466,11 @@
     <h2>Theme</h2>
     <div class="card"><div class="themes" id="themePicker"></div></div>
 
+    <h2>Display</h2>
+    <div class="card">
+      <div class="set-row"><span>✨ Reduce glow</span><span class="val"><b id="setGlow">Off</b><button id="glowToggle" class="ghost">Toggle</button></span></div>
+    </div>
+
     <h2>Goals</h2>
     <div class="card">
       <div class="set-row"><span>🎯 Weight goal</span><span class="val"><b id="setGoalVal">75</b> kg <button id="goalEdit" class="ghost">Change</button></span></div>
@@ -468,7 +482,16 @@
       <div class="set-row"><span>📖 Full workouts shown</span><span class="val"><b id="setLogFull">5</b><button id="logFullEdit" class="ghost">Change</button></span></div>
     </div>
 
+    <h2>Data</h2>
+    <div class="card">
+      <div class="set-row"><span>🗂️ Manage exercises</span><button id="manageBtn" class="ghost">Open</button></div>
+      <div class="set-row"><span>🧪 Sample data</span><button id="reloadSample" class="ghost">Reload</button></div>
+    </div>
+
     <h2>Backup</h2>
+    <div class="card" style="margin-bottom:12px">
+      <div class="set-row"><span>⏰ Reminder</span><span class="val"><b id="setBackup">7 days</b><button id="backupEdit" class="ghost">Change</button></span></div>
+    </div>
     <div class="row" style="gap:10px">
       <button id="exportBtn" class="ghost" style="flex:1">Export data</button>
       <button id="importBtn" class="ghost" style="flex:1">Import data</button>
@@ -477,7 +500,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.20.1</div>
+    <div class="ver-foot" id="verLabel">v1.21.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -505,6 +528,13 @@
   </div>
 </div>
 
+<div id="manageModal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>Manage exercises</span><button id="manageClose" class="modal-x" aria-label="close">✕</button></div>
+    <div id="manageBody"></div>
+  </div>
+</div>
+
 <div id="editModal" class="modal" hidden>
   <div class="modal-card">
     <div class="modal-head"><span>Edit exercise</span><button id="editClose" class="modal-x" aria-label="close">✕</button></div>
@@ -525,7 +555,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.20.1';
+const APP_VERSION='1.21.0';
 
 /* storage */
 const DB={
@@ -554,6 +584,8 @@ let shakes=DB.get('shakes',{});
 let goal=DB.get('goal',75);                  // goal weight in kg
 let weeklyGoal=DB.get('weeklyGoal',3);       // workouts-per-week target
 let logFull=DB.get('logFull',5);             // workouts shown in full on the log
+let backupDays=DB.get('backupDays',7);       // days between backup reminders (0=off)
+let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
@@ -562,6 +594,8 @@ const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'
 if(!THEMES.some(t=>t.id===theme)){ theme='neon'; DB.set('theme',theme); }
 function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
 applyTheme();
+function applyGlow(){ document.documentElement.classList.toggle('reduce-glow', reduceGlow); }
+applyGlow();
 
 /* one-time: mark 20 & 21 Jul 2026 as shake days */
 const SHAKE_SEED='shakeseed-20260720-21';
@@ -619,7 +653,12 @@ document.getElementById('verLabel').textContent='v'+APP_VERSION;
 
 /* toast */
 let toastT;
-function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
+function showToast(msg, undo){
+  const t=document.getElementById('toast');
+  t.innerHTML=''; const s=document.createElement('span'); s.textContent=msg; t.appendChild(s);
+  if(undo){ const b=document.createElement('button'); b.className='toast-undo'; b.textContent='Undo'; b.onclick=()=>{ t.classList.remove('show'); undo(); }; t.appendChild(b); }
+  t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), undo?4500:2400);
+}
 function norm(s){ return s.trim().toLowerCase(); }
 /* Dutch numeral formatting: 1.000 / 1.000.000, decimals with comma */
 function fmtNum(n){ return Math.round(n).toLocaleString('nl-NL'); }
@@ -658,7 +697,45 @@ function renderSettings(){
   document.getElementById('setGoalVal').textContent=goal;
   document.getElementById('setWeeklyVal').textContent=weeklyGoal;
   document.getElementById('setLogFull').textContent=logFull;
+  document.getElementById('setGlow').textContent=reduceGlow?'On':'Off';
+  document.getElementById('setBackup').textContent=backupDays>0?(backupDays+' day'+(backupDays>1?'s':'')):'Off';
 }
+document.getElementById('glowToggle').onclick=()=>{ reduceGlow=!reduceGlow; DB.set('reduceGlow',reduceGlow); applyGlow(); renderSettings(); };
+document.getElementById('backupEdit').onclick=()=>{
+  const v=prompt('Backup reminder every how many days? (0 = off)', backupDays);
+  if(v==null) return; const n=parseInt(v,10);
+  if(isNaN(n)||n<0){ alert('Enter 0 or a positive whole number.'); return; }
+  backupDays=n; DB.set('backupDays',backupDays); renderSettings(); updateBackupBanner(); showToast(n>0?('Reminder: every '+n+'d'):'Reminder off');
+};
+document.getElementById('reloadSample').onclick=()=>{
+  if(!confirm('Load sample workout data? It fills empty days and keeps anything you already logged.')) return;
+  seedTestData(); updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); showToast('Sample data loaded ✓');
+};
+
+/* manage exercises */
+function renameExercise(oldN,newN){ Object.values(exercises).forEach(a=>a.forEach(it=>{ if(it.name===oldN) it.name=newN; })); DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); showToast('Renamed'); }
+function deleteExercise(name){ Object.keys(exercises).forEach(k=>{ exercises[k]=exercises[k].filter(it=>it.name!==name); if(!exercises[k].length) delete exercises[k]; }); DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); showToast('Deleted '+name); }
+function openManage(){
+  const body=document.getElementById('manageBody');
+  const set=new Set(); Object.values(exercises).forEach(a=>a.forEach(it=>set.add(it.name)));
+  const names=[...set].sort((a,b)=>a.toLowerCase().localeCompare(b.toLowerCase()));
+  if(!names.length){ body.innerHTML='<div class="empty">No exercises logged yet.</div>'; }
+  else{
+    body.innerHTML='';
+    names.forEach(name=>{
+      let cnt=0; Object.values(exercises).forEach(a=>a.forEach(it=>{ if(it.name===name)cnt++; }));
+      const row=document.createElement('div'); row.className='weekrow';
+      row.innerHTML='<span class="muted">'+name+' ×'+cnt+'</span><span class="mg-acts"><button class="mg-ren">Rename</button><button class="mg-del" aria-label="delete">✕</button></span>';
+      row.querySelector('.mg-ren').onclick=()=>{ const nn=prompt('Rename "'+name+'" to:', name); if(nn==null) return; const t=nn.trim(); if(!t) return; renameExercise(name,t); openManage(); };
+      row.querySelector('.mg-del').onclick=()=>{ if(!confirm('Delete all '+cnt+' "'+name+'" entr'+(cnt>1?'ies':'y')+' across every day?')) return; deleteExercise(name); openManage(); };
+      body.appendChild(row);
+    });
+  }
+  document.getElementById('manageModal').hidden=false;
+}
+document.getElementById('manageBtn').onclick=openManage;
+document.getElementById('manageClose').onclick=()=>document.getElementById('manageModal').hidden=true;
+document.getElementById('manageModal').onclick=e=>{ if(e.target.id==='manageModal') document.getElementById('manageModal').hidden=true; };
 document.getElementById('logFullEdit').onclick=()=>{
   const v=prompt('How many workouts to show in full on the log:', logFull);
   if(v==null) return; const n=parseInt(v,10);
@@ -738,7 +815,8 @@ function renderList(elId, day){
     li.querySelector('.name').onclick=()=>openExerciseHistory(it.name);
     li.querySelector('.w').textContent=fmtEntry(it);
     li.querySelector('.edit').onclick=()=>openEdit(day,i);
-    li.querySelector('.del').onclick=()=>{ const arr=exercises[day]; arr.splice(i,1); if(!arr.length)delete exercises[day]; DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); };
+    li.querySelector('.del').onclick=()=>{ const arr=exercises[day]; const removed=arr[i]; arr.splice(i,1); if(!arr.length)delete exercises[day]; DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal();
+      showToast('Deleted '+removed.name, ()=>{ const a=exercises[day]||(exercises[day]=[]); a.splice(Math.min(i,a.length),0,removed); DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); }); };
     list.appendChild(li);
   });
 }
@@ -790,9 +868,11 @@ document.getElementById('editSave').onclick=()=>{
 };
 document.getElementById('editDelete').onclick=()=>{
   if(!editTarget) return;
-  exercises[editTarget.day].splice(editTarget.idx,1);
-  if(!exercises[editTarget.day].length) delete exercises[editTarget.day];
-  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderWeeklyGoal(); showToast('Deleted');
+  const day=editTarget.day, idx=editTarget.idx, removed=exercises[day][idx];
+  exercises[day].splice(idx,1);
+  if(!exercises[day].length) delete exercises[day];
+  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderWeeklyGoal();
+  showToast('Deleted '+removed.name, ()=>{ const a=exercises[day]||(exercises[day]=[]); a.splice(Math.min(idx,a.length),0,removed); DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); });
 };
 
 /* weekly workout goal */
@@ -1262,15 +1342,18 @@ function renderLog(){
 
 /* reset all data */
 document.getElementById('resetBtn').onclick=()=>{
-  if(!confirm('Reset all data? This erases every weigh-in, exercise, and shake. This cannot be undone.')) return;
+  if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull);
+  localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false;
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('theme',theme);
+  applyGlow();
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,theme};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1285,7 +1368,7 @@ function updateBackupBanner(){
   const b=document.getElementById('backupBanner');
   const hasData=Object.keys(exercises).length>0 || Object.keys(weights).length>0;
   const last=Math.max(DB.get('lastExport',0)||0, DB.get('backupSnooze',0)||0);
-  b.hidden = !(hasData && daysSince(last)>=7);
+  b.hidden = !(backupDays>0 && hasData && daysSince(last)>=backupDays);
 }
 document.getElementById('backupGo').onclick=exportData;
 document.getElementById('backupX').onclick=()=>{ DB.set('backupSnooze',Date.now()); updateBackupBanner(); };
@@ -1304,7 +1387,11 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.goal==='number' && d.goal>0) goal=d.goal;
       if(typeof d.weeklyGoal==='number' && d.weeklyGoal>0) weeklyGoal=d.weeklyGoal;
       if(typeof d.logFull==='number' && d.logFull>0) logFull=d.logFull;
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull);
+      if(typeof d.backupDays==='number' && d.backupDays>=0) backupDays=d.backupDays;
+      if(typeof d.reduceGlow==='boolean') reduceGlow=d.reduceGlow;
+      if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('theme',theme);
+      applyTheme(); applyGlow();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
       showToast('Backup imported ✓');
     }catch(err){ alert('Could not read that backup file.'); }
