@@ -245,6 +245,21 @@
   /* entry edit button */
   li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none}
 
+  /* year heatmap */
+  .heat{display:flex;flex-direction:column;gap:4px}
+  .heat-row{display:flex;align-items:center;gap:3px}
+  .heat-lbl{width:26px;font-size:10px;font-weight:800;color:var(--muted);flex:0 0 auto;text-transform:uppercase}
+  .hc{flex:1 1 0;aspect-ratio:1;border-radius:2px;background:var(--bg2)}
+  .hc.e{background:var(--line);opacity:.5}
+  .hc.blank{background:transparent}
+  .hc.l1{background:var(--neon);opacity:.30}
+  .hc.l2{background:var(--neon);opacity:.52}
+  .hc.l3{background:var(--neon);opacity:.74}
+  .hc.l4{background:var(--neon);opacity:1}
+  .hc.today{outline:1.5px solid var(--neon2);outline-offset:-1px}
+  .heat-leg{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:12px;font-size:10px;color:var(--muted);font-weight:700}
+  .heat-leg .hc{width:11px;height:11px;flex:0 0 auto;aspect-ratio:auto}
+
   /* settings */
   .themes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   .theme-opt{background:var(--bg2);border:2px solid var(--line);border-radius:12px;
@@ -391,8 +406,17 @@
     <h2>Volume Trend</h2>
     <div class="card"><div id="statTrend"></div></div>
 
+    <h2>Year Heatmap</h2>
+    <div class="card"><div id="statHeat"></div></div>
+
     <h2>Milestones</h2>
     <div class="card"><div id="statMilestones"></div></div>
+
+    <h2>Recap</h2>
+    <div class="row" style="gap:10px">
+      <button id="recapMonth" class="ghost" style="flex:1">Month recap</button>
+      <button id="recapYear" class="ghost" style="flex:1">Year recap</button>
+    </div>
   </section>
 
   <!-- SETTINGS -->
@@ -415,7 +439,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.14.1</div>
+    <div class="ver-foot" id="verLabel">v1.15.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -461,7 +485,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.14.1';
+const APP_VERSION='1.15.0';
 
 /* storage */
 const DB={
@@ -998,10 +1022,77 @@ function renderMusclePie(){
   const legend='<div class="legend">'+order.map(g=>'<div class="lg"><span class="dot" style="background:'+GROUP_COLORS[g]+'"></span>'+g+' <b>'+Math.round(counts[g]/total*100)+'%</b></div>').join('')+'</div>';
   box.innerHTML='<div class="pie-wrap">'+svg+legend+'</div>';
 }
+function renderHeatmap(){
+  const box=document.getElementById('statHeat');
+  const yr=new Date().getFullYear(), yrs=String(yr);
+  let maxV=0; const volByDay={}; let any=false;
+  Object.keys(exercises).forEach(k=>{ if(k.slice(0,4)!==yrs) return; if(!exercises[k].length) return; any=true;
+    const v=exercises[k].reduce((s,it)=>s+vol(it),0); volByDay[k]=v; if(v>maxV)maxV=v; });
+  if(!any){ box.innerHTML='<div class="empty">Log workouts to fill your year.</div>'; return; }
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const tK=todayKey();
+  let h='<div class="heat">';
+  for(let m=0;m<12;m++){
+    h+='<div class="heat-row"><span class="heat-lbl">'+months[m]+'</span>';
+    const dim=new Date(yr,m+1,0).getDate();
+    for(let d=1;d<=31;d++){
+      if(d>dim){ h+='<span class="hc blank"></span>'; continue; }
+      const key=yrs+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const trained=!!(exercises[key]&&exercises[key].length);
+      let cls='hc';
+      if(trained){ const v=volByDay[key]||0; cls+=' l'+(maxV>0?Math.min(4,Math.max(1,Math.ceil(v/maxV*4))):1); }
+      else cls+=' e';
+      if(key===tK) cls+=' today';
+      h+='<span class="'+cls+'"></span>';
+    }
+    h+='</div>';
+  }
+  h+='</div><div class="heat-leg">Less <span class="hc e"></span><span class="hc l1"></span><span class="hc l2"></span><span class="hc l3"></span><span class="hc l4"></span> More</div>';
+  box.innerHTML=h;
+}
+
+/* shareable recap card */
+function periodShakesCount(pred){ return Object.keys(shakes).filter(k=>shakes[k]&&pred(k)).length; }
+function favGroupIn(pred){ const c={}; let bn=null,bc=0; Object.keys(exercises).forEach(k=>{ if(!pred(k))return; exercises[k].forEach(it=>{ if(!it.group)return; c[it.group]=(c[it.group]||0)+1; if(c[it.group]>bc){bc=c[it.group];bn=it.group;} }); }); return bn; }
+function heaviestIn(pred){ let hh=0; Object.keys(exercises).forEach(k=>{ if(!pred(k))return; exercises[k].forEach(it=>{ if(it.weight!=null)hh=Math.max(hh,it.weight); }); }); return hh; }
+function generateRecap(period){
+  const now=new Date(); let pred,label;
+  if(period==='month'){ const ym=todayKey(now).slice(0,7); pred=k=>k.slice(0,7)===ym; label=now.toLocaleDateString(undefined,{month:'long',year:'numeric'}); }
+  else { const yr=String(now.getFullYear()); pred=k=>k.slice(0,4)===yr; label=yr; }
+  const st=periodStats(pred), shk=periodShakesCount(pred), fav=favGroupIn(pred), heavy=heaviestIn(pred);
+  const cs=getComputedStyle(document.documentElement);
+  const V=(n,f)=>{ const v=cs.getPropertyValue(n).trim(); return v||f; };
+  const neon=V('--neon','#39ff14'), neon2=V('--neon2','#00f0ff'), muted=V('--muted','#7a7a8c'), bg=V('--bg','#0a0a0f');
+  const W=1080,H=1350, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+  g.fillStyle=bg; g.fillRect(0,0,W,H);
+  const grd=g.createRadialGradient(W/2,-80,60,W/2,-80,1000); grd.addColorStop(0,neon+'40'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=grd; g.fillRect(0,0,W,760);
+  g.textAlign='center';
+  g.fillStyle=neon; g.font='900 96px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('GYMBRO', W/2, 190);
+  g.fillStyle=muted; g.font='800 34px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('WRAPPED · '+label.toUpperCase(), W/2, 246);
+  const rows=[['Workouts',fmtNum(st.workouts)],['Kg lifted',fmtNum(st.volume)],['Shakes',fmtNum(shk)]];
+  if(fav) rows.push(['Top muscle',fav]);
+  if(heavy>0) rows.push(['Heaviest lift',fmtDec(heavy)+' kg']);
+  let y=430;
+  rows.forEach(r=>{
+    g.textAlign='left'; g.fillStyle=muted; g.font='800 40px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(r[0].toUpperCase(),110,y);
+    g.textAlign='right'; g.fillStyle=neon2; g.font='900 66px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(String(r[1]),W-110,y+4);
+    y+=155; g.strokeStyle=muted+'40'; g.lineWidth=2; g.beginPath(); g.moveTo(110,y-74); g.lineTo(W-110,y-74); g.stroke();
+  });
+  g.textAlign='center'; g.fillStyle=muted; g.font='800 30px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('BUILT DIFFERENT. TRACKED BETTER.',W/2,H-150);
+  g.fillStyle=muted; g.font='600 24px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('© Erwin Koot',W/2,H-100);
+  c.toBlob(b=>{ const url=URL.createObjectURL(b); const a=document.createElement('a'); a.href=url;
+    a.download='gymbro-wrapped-'+(period==='month'?todayKey().slice(0,7):new Date().getFullYear())+'.png';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showToast('Recap saved ✓'); },'image/png');
+}
+document.getElementById('recapMonth').onclick=()=>generateRecap('month');
+document.getElementById('recapYear').onclick=()=>generateRecap('year');
+
 function renderStats(){
   renderWeekSummary();
   renderVolumeTrend();
   renderMusclePie();
+  renderHeatmap();
   let totVol=0,heaviest=0;
   Object.values(exercises).forEach(a=>a.forEach(it=>{ totVol+=vol(it);
     if(it.weight!=null) heaviest=Math.max(heaviest,it.weight); }));
