@@ -440,7 +440,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.16.0</div>
+    <div class="ver-foot" id="verLabel">v1.16.1</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -486,7 +486,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.16.0';
+const APP_VERSION='1.16.1';
 
 /* storage */
 const DB={
@@ -1079,7 +1079,7 @@ function generateRecap(period){
   })();
   g.textAlign='center';
   g.fillStyle=neon; g.font='900 96px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('GYMBRO', W/2, 320);
-  g.fillStyle=muted; g.font='800 34px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('WRAPPED · '+label.toUpperCase(), W/2, 376);
+  g.fillStyle=muted; g.font='800 34px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('WRAPPED · '+label.toUpperCase(), W/2, 408);
   const rows=[['Workouts',fmtNum(st.workouts)],['Kg lifted',fmtNum(st.volume)],['Shakes',fmtNum(shk)]];
   if(fav) rows.push(['Top muscle',fav]);
   if(heavy>0) rows.push(['Heaviest lift',fmtDec(heavy)+' kg']);
