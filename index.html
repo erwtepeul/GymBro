@@ -453,7 +453,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.19.4</div>
+    <div class="ver-foot" id="verLabel">v1.19.5</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -501,7 +501,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.19.4';
+const APP_VERSION='1.19.5';
 
 /* storage */
 const DB={
@@ -872,10 +872,11 @@ function miniChart(points){
   for(let i=0;i<=div;i++){ const v=yMin+(yMax-yMin)*i/div; const y=Y(v); grid+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" class="cg"/>'; }
   [yMax,+((yMin+yMax)/2).toFixed(1),yMin].forEach(v=>{ const y=Y(v); labels+='<text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" class="cl" text-anchor="end">'+fmtDec(v)+'</text>'; });
   const line=points.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.value).toFixed(1)).join(' ');
+  const area='M'+X(0).toFixed(1)+' '+(padT+ph)+' '+points.map((p,i)=>'L'+X(i).toFixed(1)+' '+Y(p.value).toFixed(1)).join(' ')+' L'+X(points.length-1).toFixed(1)+' '+(padT+ph)+' Z';
   const dots=points.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.value).toFixed(1)+'" r="3" class="cd"/>').join('');
   const xl=i=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" class="cl" text-anchor="middle">'+new Date(points[i].label+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</text>';
   const xlabels=n===1?xl(0):xl(0)+xl(n-1);
-  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" style="margin-bottom:14px">'+grid+labels+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="chart" style="margin-bottom:14px"><path d="'+area+'" class="carea"/>'+grid+labels+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
 }
 function openExerciseHistory(name){
   const days=Object.keys(exercises).sort();
