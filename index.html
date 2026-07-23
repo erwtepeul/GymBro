@@ -309,6 +309,9 @@
   .mg-acts{display:flex;align-items:center;gap:6px}
   .mg-ren{background:transparent;color:var(--neon2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;box-shadow:none;text-transform:none;letter-spacing:0}
   .mg-del{background:none;color:var(--danger);border:none;padding:6px;font-size:15px;box-shadow:none}
+  input[type=color]{-webkit-appearance:none;appearance:none;width:44px;height:44px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);flex:0 0 auto}
+  input[type=color].gcol{width:34px;height:34px}
+  .gname{font-weight:700;color:var(--ink)}
   .copyr{text-align:center;font-size:10px;color:var(--muted);margin-top:6px;font-weight:600;letter-spacing:.5px}
 
   /* nav */
@@ -352,7 +355,7 @@
   <div class="subrow">
     <span class="slogan">Built different. Tracked better.</span>
   </div>
-  <button id="hgear" class="hgear" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></svg></button>
+  <button id="hgear" class="hgear" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 </header>
 
 <main>
@@ -447,31 +450,18 @@
 
   <!-- STATS -->
   <section class="view" id="view-stats">
-    <h2>This Week</h2>
-    <div class="card"><div id="statSummary"></div></div>
-
-    <h2>This Month</h2>
-    <div class="card"><div id="statMonth"></div></div>
-
-    <h2>This Year</h2>
-    <div class="card"><div id="statYear"></div></div>
-
-    <h2>Muscle Balance</h2>
-    <div class="card"><div id="statPie"></div></div>
-
-    <h2>Volume Trend</h2>
-    <div class="card"><div id="statTrend"></div></div>
-
-    <h2>Year Heatmap</h2>
-    <div class="card"><div id="statHeat"></div></div>
-
-    <h2>Milestones</h2>
-    <div class="card"><div id="statMilestones"></div></div>
-
-    <h2>Recap</h2>
-    <div class="row" style="gap:10px">
-      <button id="recapMonth" class="ghost" style="flex:1">Month recap</button>
-      <button id="recapYear" class="ghost" style="flex:1">Year recap</button>
+    <div class="dsec" data-sec="week"><h2>This Week</h2><div class="card"><div id="statSummary"></div></div></div>
+    <div class="dsec" data-sec="month"><h2>This Month</h2><div class="card"><div id="statMonth"></div></div></div>
+    <div class="dsec" data-sec="year"><h2>This Year</h2><div class="card"><div id="statYear"></div></div></div>
+    <div class="dsec" data-sec="muscle"><h2>Muscle Balance</h2><div class="card"><div id="statPie"></div></div></div>
+    <div class="dsec" data-sec="trend"><h2>Volume Trend</h2><div class="card"><div id="statTrend"></div></div></div>
+    <div class="dsec" data-sec="heat"><h2>Year Heatmap</h2><div class="card"><div id="statHeat"></div></div></div>
+    <div class="dsec" data-sec="miles"><h2>Milestones</h2><div class="card"><div id="statMilestones"></div></div></div>
+    <div class="dsec" data-sec="recap"><h2>Recap</h2>
+      <div class="row" style="gap:10px">
+        <button id="recapMonth" class="ghost" style="flex:1">Month recap</button>
+        <button id="recapYear" class="ghost" style="flex:1">Year recap</button>
+      </div>
     </div>
   </section>
 
@@ -498,8 +488,12 @@
       <div class="set-row"><span>📖 Full workouts shown</span><span class="val"><b id="setLogFull">5</b><button id="logFullEdit" class="ghost">Change</button></span></div>
     </div>
 
+    <h2>Dashboard</h2>
+    <div class="card"><div id="dashBody"></div></div>
+
     <h2>Data</h2>
     <div class="card">
+      <div class="set-row"><span>🎨 Muscle groups</span><button id="groupBtn" class="ghost">Manage</button></div>
       <div class="set-row"><span>🗂️ Manage exercises</span><button id="manageBtn" class="ghost">Open</button></div>
       <div class="set-row"><span>🧪 Load sample data</span><button id="reloadSample" class="ghost">Load</button></div>
       <div class="set-row"><span>🧹 Remove sample data</span><button id="removeSample" class="ghost">Remove</button></div>
@@ -517,7 +511,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.23.0</div>
+    <div class="ver-foot" id="verLabel">v1.24.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -541,6 +535,18 @@
   <div class="modal-card">
     <div class="modal-head"><span id="exModalTitle"></span><button id="exModalClose" class="modal-x" aria-label="close">✕</button></div>
     <div id="exModalBody"></div>
+  </div>
+</div>
+
+<div id="groupModal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>Muscle groups</span><button id="groupClose" class="modal-x" aria-label="close">✕</button></div>
+    <div id="groupBody"></div>
+    <div class="row" style="margin-top:14px;gap:8px">
+      <input id="newGroupName" placeholder="New group">
+      <input id="newGroupColor" type="color" value="#39ff14" class="gcol">
+      <button id="newGroupAdd">Add</button>
+    </div>
   </div>
 </div>
 
@@ -571,7 +577,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.23.0';
+const APP_VERSION='1.24.0';
 
 /* storage */
 const DB={
@@ -604,6 +610,8 @@ let backupDays=DB.get('backupDays',7);       // days between backup reminders (0
 let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
 let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
+function defaultDash(){ return {week:1,month:1,year:1,muscle:1,trend:1,heat:1,miles:1,recap:1}; }
+let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
@@ -704,10 +712,19 @@ function countUp(el,to,fmt){ if(reduceGlow){ el.textContent=fmt(to); return; } c
 function animateCU(box){ box.querySelectorAll('.cu').forEach(el=>countUp(el,+el.dataset.to,fmtNum)); }
 
 /* muscle groups */
-const GROUPS=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
-const GROUP_COLORS={Chest:'#39ff14',Back:'#00f0ff',Shoulders:'#ff3b6b',Arms:'#ffd23f',Legs:'#b56bff',Core:'#ff8c42',Cardio:'#38bdf8'};
-const GROUP_GREYS={Chest:'#f2f2f7',Back:'#cfd3d9',Shoulders:'#b0b4bc',Arms:'#94989f',Legs:'#797d85',Core:'#5f636b',Cardio:'#484c54'};
-const GROUP_OPTIONS='<option value="">Select muscle group</option>'+GROUPS.map(g=>'<option>'+g+'</option>').join('');
+const DEFAULT_GROUPS=[{name:'Chest',color:'#39ff14'},{name:'Back',color:'#00f0ff'},{name:'Shoulders',color:'#ff3b6b'},{name:'Arms',color:'#ffd23f'},{name:'Legs',color:'#b56bff'},{name:'Core',color:'#ff8c42'},{name:'Cardio',color:'#38bdf8'}];
+let groupCfg=DB.get('groups', DEFAULT_GROUPS);
+if(!Array.isArray(groupCfg)||!groupCfg.length) groupCfg=DEFAULT_GROUPS.slice();
+let GROUPS, GROUP_COLORS, GROUP_GREYS, GROUP_OPTIONS;
+function rebuildGroups(){
+  GROUPS=groupCfg.map(g=>g.name);
+  GROUP_COLORS={}; groupCfg.forEach(g=>GROUP_COLORS[g.name]=g.color);
+  GROUP_GREYS={}; const n=Math.max(1,GROUPS.length-1); GROUPS.forEach((name,i)=>{ const v=Math.round(235-(i/n)*163); GROUP_GREYS[name]='rgb('+v+','+v+','+Math.min(255,v+8)+')'; });
+  GROUP_OPTIONS='<option value="">Select muscle group</option>'+GROUPS.map(g=>'<option>'+g.replace(/"/g,'&quot;')+'</option>').join('');
+  const eg=document.getElementById('exGroup'), edg=document.getElementById('editGroup');
+  if(eg) eg.innerHTML=GROUP_OPTIONS; if(edg) edg.innerHTML=GROUP_OPTIONS;
+}
+rebuildGroups();
 
 /* nav */
 function showView(v){
@@ -733,8 +750,16 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
+const DASH_SECS=[['week','This week'],['month','This month'],['year','This year'],['muscle','Muscle balance'],['trend','Volume trend'],['heat','Year heatmap'],['miles','Milestones'],['recap','Recap']];
+function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
+function renderDash(){
+  const b=document.getElementById('dashBody');
+  b.innerHTML=DASH_SECS.map(s=>'<div class="set-row"><span>'+s[1]+'</span><button class="ghost dash-t" data-sec="'+s[0]+'">'+(dash[s[0]]?'On':'Off')+'</button></div>').join('');
+  b.querySelectorAll('.dash-t').forEach(btn=>btn.onclick=()=>{ const k=btn.dataset.sec; dash[k]=dash[k]?0:1; DB.set('dash',dash); btn.textContent=dash[k]?'On':'Off'; applyDash(); });
+}
 function renderSettings(){
   renderThemes();
+  renderDash();
   document.getElementById('setGoalVal').textContent=goal;
   document.getElementById('setWeeklyVal').textContent=weeklyGoal;
   document.getElementById('setLogFull').textContent=logFull;
@@ -786,6 +811,31 @@ function openManage(){
 document.getElementById('manageBtn').onclick=openManage;
 document.getElementById('manageClose').onclick=()=>document.getElementById('manageModal').hidden=true;
 document.getElementById('manageModal').onclick=e=>{ if(e.target.id==='manageModal') document.getElementById('manageModal').hidden=true; };
+
+/* manage muscle groups */
+function renameGroup(oldN,newN){ groupCfg.forEach(g=>{ if(g.name===oldN)g.name=newN; }); Object.values(exercises).forEach(a=>a.forEach(it=>{ if(it.group===oldN) it.group=newN; })); DB.set('groups',groupCfg); DB.set('exercises',exercises); rebuildGroups(); renderExercises(); }
+function openGroups(){
+  const body=document.getElementById('groupBody'); body.innerHTML='';
+  groupCfg.forEach((g,i)=>{
+    const row=document.createElement('div'); row.className='weekrow';
+    row.innerHTML='<span class="mg-acts"><input type="color" class="gcol"><span class="gname"></span></span><span class="mg-acts"><button class="mg-ren">Rename</button><button class="mg-del" aria-label="delete">✕</button></span>';
+    row.querySelector('.gcol').value=g.color; row.querySelector('.gname').textContent=g.name;
+    row.querySelector('.gcol').onchange=e=>{ groupCfg[i].color=e.target.value; DB.set('groups',groupCfg); rebuildGroups(); };
+    row.querySelector('.mg-ren').onclick=()=>{ const nn=prompt('Rename "'+g.name+'" to:', g.name); if(nn==null)return; const t=nn.trim(); if(!t)return; if(groupCfg.some(x=>x.name.toLowerCase()===t.toLowerCase() && x.name!==g.name)){ alert('That group already exists.'); return; } renameGroup(g.name,t); openGroups(); };
+    row.querySelector('.mg-del').onclick=()=>{ if(groupCfg.length<=1){ alert('Keep at least one group.'); return; } if(!confirm('Remove "'+g.name+'"? Existing entries keep the tag but drop out of the balance chart.')) return; groupCfg.splice(i,1); DB.set('groups',groupCfg); rebuildGroups(); openGroups(); };
+    body.appendChild(row);
+  });
+  document.getElementById('groupModal').hidden=false;
+}
+document.getElementById('groupBtn').onclick=openGroups;
+document.getElementById('groupClose').onclick=()=>document.getElementById('groupModal').hidden=true;
+document.getElementById('groupModal').onclick=e=>{ if(e.target.id==='groupModal') document.getElementById('groupModal').hidden=true; };
+document.getElementById('newGroupAdd').onclick=()=>{
+  const nm=document.getElementById('newGroupName').value.trim(); if(!nm) return;
+  if(groupCfg.some(g=>g.name.toLowerCase()===nm.toLowerCase())){ alert('That group already exists.'); return; }
+  groupCfg.push({name:nm,color:document.getElementById('newGroupColor').value}); DB.set('groups',groupCfg); rebuildGroups();
+  document.getElementById('newGroupName').value=''; openGroups();
+};
 document.getElementById('logFullEdit').onclick=()=>{
   const v=prompt('How many workouts to show in full on the log:', logFull);
   if(v==null) return; const n=parseInt(v,10);
@@ -1339,6 +1389,7 @@ document.getElementById('recapMonth').onclick=()=>generateRecap('month');
 document.getElementById('recapYear').onclick=()=>generateRecap('year');
 
 function renderStats(){
+  applyDash();
   renderWeekSummary();
   renderVolumeTrend();
   renderMusclePie();
@@ -1399,14 +1450,15 @@ document.getElementById('resetBtn').onclick=()=>{
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
   exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false;
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme);
-  applyGlow();
+  groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+  applyGlow(); rebuildGroups();
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,theme};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1445,8 +1497,10 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.haptics==='boolean') haptics=d.haptics;
       if(typeof d.sound==='boolean') sound=d.sound;
       if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme);
-      applyTheme(); applyGlow();
+      if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
+      if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      applyTheme(); applyGlow(); rebuildGroups();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
       showToast('Backup imported ✓');
     }catch(err){ alert('Could not read that backup file.'); }
