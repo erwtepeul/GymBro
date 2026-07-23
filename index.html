@@ -71,12 +71,13 @@
       radial-gradient(900px 500px at 100% 110%, var(--gb), transparent 60%),
       var(--bg);
     color:var(--ink);
+    font-variant-numeric:tabular-nums;
     display:flex; flex-direction:column;
     height:100vh; height:100dvh; overflow:hidden;
     padding-top:env(safe-area-inset-top);
   }
   /* header / wordmark */
-  header{flex:0 0 auto;padding:28px 20px 8px;text-align:center}
+  header{position:relative;flex:0 0 auto;padding:28px 20px 8px;text-align:center}
   .brand{display:inline-flex;align-items:center;gap:12px}
   .brand svg{width:34px;height:34px;filter:drop-shadow(var(--glow))}
   .wordmark{
@@ -320,6 +321,18 @@
   nav button .ico svg{width:24px;height:24px;display:block}
   nav button.active{color:var(--neon)}
   nav button.active .ico{opacity:1;filter:drop-shadow(var(--glow))}
+  .nav-gap{flex:0 0 64px}
+  #fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 20px);z-index:41;
+    width:56px;height:56px;padding:0;border-radius:50%;background:var(--neon);color:#04120a;box-shadow:var(--glow);
+    display:flex;align-items:center;justify-content:center;border:none}
+  #fab:active{transform:translateX(-50%) scale(.94)}
+  #fab svg{width:26px;height:26px}
+  .hgear{position:absolute;top:26px;right:14px;width:36px;height:36px;padding:0;background:transparent;color:var(--muted);
+    border:none;box-shadow:none;display:flex;align-items:center;justify-content:center}
+  .hgear svg{width:22px;height:22px}
+  #flash{position:fixed;inset:0;pointer-events:none;z-index:70;opacity:0;background:var(--neon)}
+  #flash.on{animation:flashA .55s ease}
+  @keyframes flashA{0%{opacity:0}15%{opacity:.14}100%{opacity:0}}
 </style>
 </head>
 <body>
@@ -339,6 +352,7 @@
   <div class="subrow">
     <span class="slogan">Built different. Tracked better.</span>
   </div>
+  <button id="hgear" class="hgear" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></svg></button>
 </header>
 
 <main>
@@ -469,6 +483,8 @@
     <h2>Display</h2>
     <div class="card">
       <div class="set-row"><span>✨ Reduce glow</span><span class="val"><b id="setGlow">Off</b><button id="glowToggle" class="ghost">Toggle</button></span></div>
+      <div class="set-row"><span>📳 Haptics</span><span class="val"><b id="setHaptics">On</b><button id="hapticToggle" class="ghost">Toggle</button></span></div>
+      <div class="set-row"><span>🔊 Sound</span><span class="val"><b id="setSound">Off</b><button id="soundToggle" class="ghost">Toggle</button></span></div>
     </div>
 
     <h2>Goals</h2>
@@ -501,7 +517,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.22.0</div>
+    <div class="ver-foot" id="verLabel">v1.23.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -509,18 +525,17 @@
 <nav>
   <button data-view="today" class="active">
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9v6M5.5 5.5v13M8 12h8M18.5 5.5v13M22 9v6"/></svg></span>Today</button>
-  <button data-view="add">
-    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>Add</button>
   <button data-view="weight">
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4.5"/><path d="M12 7.2v3.3"/><path d="M8.4 8.4a5 5 0 0 1 7.2 0"/></svg></span>Weight</button>
+  <span class="nav-gap" aria-hidden="true"></span>
   <button data-view="log">
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>Log</button>
   <button data-view="stats">
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 0 1-10 0V4z"/><path d="M7 6.5H4.5V7a2.5 2.5 0 0 0 2.5 2.5M17 6.5h2.5V7a2.5 2.5 0 0 1-2.5 2.5"/><path d="M12 12v3.5M9 20h6M10.5 20v-2.5h3V20"/></svg></span>Stats</button>
-  <button data-view="settings">
-    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></svg></span>Settings</button>
 </nav>
+<button id="fab" aria-label="Log an exercise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <div id="toast" class="toast"></div>
+<div id="flash"></div>
 
 <div id="exModal" class="modal" hidden>
   <div class="modal-card">
@@ -556,7 +571,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.22.0';
+const APP_VERSION='1.23.0';
 
 /* storage */
 const DB={
@@ -587,6 +602,8 @@ let weeklyGoal=DB.get('weeklyGoal',3);       // workouts-per-week target
 let logFull=DB.get('logFull',5);             // workouts shown in full on the log
 let backupDays=DB.get('backupDays',7);       // days between backup reminders (0=off)
 let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
+let haptics=DB.get('haptics',true);          // vibration feedback
+let sound=DB.get('sound',false);             // sound feedback
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
@@ -678,6 +695,13 @@ function norm(s){ return s.trim().toLowerCase(); }
 /* Dutch numeral formatting: 1.000 / 1.000.000, decimals with comma */
 function fmtNum(n){ return Math.round(n).toLocaleString('nl-NL'); }
 function fmtDec(n){ return Number(n).toLocaleString('nl-NL',{maximumFractionDigits:1}); }
+/* feedback + micro-interactions */
+function buzz(p){ if(haptics && navigator.vibrate){ try{ navigator.vibrate(p); }catch(e){} } }
+let _ac;
+function beep(freq,dur){ if(!sound) return; try{ _ac=_ac||new (window.AudioContext||window.webkitAudioContext)(); const o=_ac.createOscillator(),g=_ac.createGain(); o.type='sine'; o.frequency.value=freq||660; o.connect(g); g.connect(_ac.destination); const t=_ac.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.14,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.12)); o.start(t); o.stop(t+(dur||0.13)); }catch(e){} }
+function flash(){ if(reduceGlow) return; const f=document.getElementById('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
+function countUp(el,to,fmt){ if(reduceGlow){ el.textContent=fmt(to); return; } const dur=600,s=performance.now(); (function step(now){ const p=Math.min(1,(now-s)/dur); el.textContent=fmt(Math.round(to*(1-Math.pow(1-p,3)))); if(p<1) requestAnimationFrame(step); })(performance.now()); }
+function animateCU(box){ box.querySelectorAll('.cu').forEach(el=>countUp(el,+el.dataset.to,fmtNum)); }
 
 /* muscle groups */
 const GROUPS=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
@@ -686,19 +710,21 @@ const GROUP_GREYS={Chest:'#f2f2f7',Back:'#cfd3d9',Shoulders:'#b0b4bc',Arms:'#949
 const GROUP_OPTIONS='<option value="">Select muscle group</option>'+GROUPS.map(g=>'<option>'+g+'</option>').join('');
 
 /* nav */
-document.querySelectorAll('nav button').forEach(b=>{
-  b.onclick=()=>{
-    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    document.getElementById('view-'+b.dataset.view).classList.add('active');
-    if(b.dataset.view==='add') renderExercises();
-    if(b.dataset.view==='weight') renderWeight();
-    if(b.dataset.view==='log') renderLog();
-    if(b.dataset.view==='stats') renderStats();
-    if(b.dataset.view==='settings') renderSettings();
-  };
-});
+function showView(v){
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  const nb=document.querySelector('nav button[data-view="'+v+'"]'); if(nb) nb.classList.add('active');
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelector('main').scrollTop=0;
+  if(v==='add') renderExercises();
+  if(v==='weight') renderWeight();
+  if(v==='log') renderLog();
+  if(v==='stats') renderStats();
+  if(v==='settings') renderSettings();
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+document.getElementById('fab').onclick=()=>{ buzz(12); showView('add'); };
+document.getElementById('hgear').onclick=()=>showView('settings');
 
 /* settings */
 function renderThemes(){
@@ -713,9 +739,13 @@ function renderSettings(){
   document.getElementById('setWeeklyVal').textContent=weeklyGoal;
   document.getElementById('setLogFull').textContent=logFull;
   document.getElementById('setGlow').textContent=reduceGlow?'On':'Off';
+  document.getElementById('setHaptics').textContent=haptics?'On':'Off';
+  document.getElementById('setSound').textContent=sound?'On':'Off';
   document.getElementById('setBackup').textContent=backupDays>0?(backupDays+' day'+(backupDays>1?'s':'')):'Off';
 }
 document.getElementById('glowToggle').onclick=()=>{ reduceGlow=!reduceGlow; DB.set('reduceGlow',reduceGlow); applyGlow(); renderSettings(); };
+document.getElementById('hapticToggle').onclick=()=>{ haptics=!haptics; DB.set('haptics',haptics); renderSettings(); if(haptics) buzz(20); };
+document.getElementById('soundToggle').onclick=()=>{ sound=!sound; DB.set('sound',sound); renderSettings(); if(sound) beep(700,0.12); };
 document.getElementById('backupEdit').onclick=()=>{
   const v=prompt('Backup reminder every how many days? (0 = off)', backupDays);
   if(v==null) return; const n=parseInt(v,10);
@@ -795,7 +825,7 @@ function renderShake(){
   document.getElementById('shakeStreak').textContent = s>0 ? '🔥 '+s+'-day streak' : 'No streak yet';
   document.getElementById('shakeTitle').textContent = shakeTier(s);
 }
-document.getElementById('shakeBtn').onclick=()=>{ const k=todayKey(); if(shakes[k])delete shakes[k];else shakes[k]=true; DB.set('shakes',shakes); renderShake(); };
+document.getElementById('shakeBtn').onclick=()=>{ const k=todayKey(); const on=!shakes[k]; if(on)shakes[k]=true;else delete shakes[k]; DB.set('shakes',shakes); renderShake(); buzz(12); if(on) beep(660,0.1); };
 
 /* exercises */
 /* all-time best weight for an exercise (across all days) */
@@ -961,7 +991,8 @@ document.getElementById('exAdd').onclick=()=>{
   const k=logDate();
   (exercises[k]=exercises[k]||[]).push({name,weight,sets,reps,group,dist,mins});
   DB.set('exercises',exercises);
-  if(weight!=null && prevBest!=null && weight>prevBest) showToast('🏆 New PR — '+name+' '+weight+' kg');
+  buzz(12);
+  if(weight!=null && prevBest!=null && weight>prevBest){ showToast('🏆 New PR — '+name+' '+weight+' kg'); buzz([12,45,12]); beep(880,0.16); flash(); }
   exNameEl.value=''; exWeightEl.value=''; exSetsEl.value=''; exRepsEl.value=''; exDistEl.value=''; exMinsEl.value=''; exGroupEl.value=''; updateExFields(); exNameEl.focus();
   updateExNames(); renderExercises(); renderWeeklyGoal();
 };
@@ -1152,10 +1183,12 @@ function periodStats(pred){
 function periodShakes(pred){ return Object.keys(shakes).filter(k=>shakes[k]&&pred(k)).length; }
 function renderSummaryBox(boxId,pred){
   const st=periodStats(pred), sh=periodShakes(pred);
-  document.getElementById(boxId).innerHTML='<div class="wsum">'
-    +'<div><div class="val">'+fmtNum(st.workouts)+'</div><div class="lbl">Workouts</div></div>'
-    +'<div><div class="val">'+fmtNum(st.volume)+'</div><div class="lbl">kg Volume</div></div>'
-    +'<div><div class="val">'+fmtNum(sh)+'</div><div class="lbl">Shakes</div></div></div>';
+  const box=document.getElementById(boxId);
+  box.innerHTML='<div class="wsum">'
+    +'<div><div class="val cu" data-to="'+Math.round(st.workouts)+'">'+fmtNum(st.workouts)+'</div><div class="lbl">Workouts</div></div>'
+    +'<div><div class="val cu" data-to="'+Math.round(st.volume)+'">'+fmtNum(st.volume)+'</div><div class="lbl">kg Volume</div></div>'
+    +'<div><div class="val cu" data-to="'+Math.round(sh)+'">'+fmtNum(sh)+'</div><div class="lbl">Shakes</div></div></div>';
+  animateCU(box);
 }
 function renderWeekSummary(){
   const now=new Date();
@@ -1365,15 +1398,15 @@ document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false;
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('theme',theme);
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false;
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme);
   applyGlow();
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,theme};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,theme};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1409,8 +1442,10 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.logFull==='number' && d.logFull>0) logFull=d.logFull;
       if(typeof d.backupDays==='number' && d.backupDays>=0) backupDays=d.backupDays;
       if(typeof d.reduceGlow==='boolean') reduceGlow=d.reduceGlow;
+      if(typeof d.haptics==='boolean') haptics=d.haptics;
+      if(typeof d.sound==='boolean') sound=d.sound;
       if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('theme',theme);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme);
       applyTheme(); applyGlow();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
       showToast('Backup imported ✓');
