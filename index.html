@@ -440,7 +440,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.15.1</div>
+    <div class="ver-foot" id="verLabel">v1.16.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -486,7 +486,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.15.1';
+const APP_VERSION='1.16.0';
 
 /* storage */
 const DB={
@@ -544,6 +544,7 @@ function fmtDec(n){ return Number(n).toLocaleString('nl-NL',{maximumFractionDigi
 /* muscle groups */
 const GROUPS=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
 const GROUP_COLORS={Chest:'#39ff14',Back:'#00f0ff',Shoulders:'#ff3b6b',Arms:'#ffd23f',Legs:'#b56bff',Core:'#ff8c42',Cardio:'#38bdf8'};
+const GROUP_GREYS={Chest:'#f2f2f7',Back:'#cfd3d9',Shoulders:'#b0b4bc',Arms:'#94989f',Legs:'#797d85',Core:'#5f636b',Cardio:'#484c54'};
 const GROUP_OPTIONS='<option value="">Select muscle group</option>'+GROUPS.map(g=>'<option>'+g+'</option>').join('');
 
 /* nav */
@@ -1014,13 +1015,14 @@ function renderMusclePie(){
   Object.values(exercises).forEach(a=>a.forEach(it=>{ if(!it.group) return; counts[it.group]=(counts[it.group]||0)+1; total++; }));
   if(!total){ box.innerHTML='<div class="empty">Tag exercises with a muscle group to see your breakdown.</div>'; return; }
   const order=GROUPS.filter(g=>counts[g]);
+  const COL = theme==='night' ? GROUP_GREYS : GROUP_COLORS;
   const C=2*Math.PI*54; let acc=0, circles='';
   order.forEach(g=>{ const len=C*(counts[g]/total);
-    circles+='<circle cx="75" cy="75" r="54" fill="none" stroke="'+GROUP_COLORS[g]+'" stroke-width="22" '
+    circles+='<circle cx="75" cy="75" r="54" fill="none" stroke="'+COL[g]+'" stroke-width="22" '
       +'stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-acc).toFixed(2)+'" transform="rotate(-90 75 75)"/>';
     acc+=len; });
   const svg='<svg viewBox="0 0 150 150" class="pie">'+circles+'</svg>';
-  const legend='<div class="legend">'+order.map(g=>'<div class="lg"><span class="dot" style="background:'+GROUP_COLORS[g]+'"></span>'+g+' <b>'+Math.round(counts[g]/total*100)+'%</b></div>').join('')+'</div>';
+  const legend='<div class="legend">'+order.map(g=>'<div class="lg"><span class="dot" style="background:'+COL[g]+'"></span>'+g+' <b>'+Math.round(counts[g]/total*100)+'%</b></div>').join('')+'</div>';
   box.innerHTML='<div class="pie-wrap">'+svg+legend+'</div>';
 }
 function renderHeatmap(){
@@ -1049,7 +1051,7 @@ function renderHeatmap(){
     h+='</div>';
   }
   h+='</div><div class="heat-leg">Less <span class="hc e"></span><span class="hc l1"></span><span class="hc l2"></span><span class="hc l3"></span><span class="hc l4"></span> More</div>'
-    +'<div class="heat-cap">Less = lighter day · More = up to '+fmtNum(maxV)+' kg lifted</div>';
+    +'<div class="heat-cap">up to '+fmtNum(maxV)+' kg lifted</div>';
   box.innerHTML=h;
 }
 
@@ -1069,13 +1071,19 @@ function generateRecap(period){
   g.fillStyle=bg; g.fillRect(0,0,W,H);
   const grd=g.createRadialGradient(W/2,-80,60,W/2,-80,1000); grd.addColorStop(0,neon+'40'); grd.addColorStop(1,'rgba(0,0,0,0)');
   g.fillStyle=grd; g.fillRect(0,0,W,760);
+  // dumbbell logo
+  const rrect=(x,yy,w,hh,r)=>{ if(g.roundRect){ g.beginPath(); g.roundRect(x,yy,w,hh,r); } else { g.beginPath(); g.moveTo(x+r,yy); g.arcTo(x+w,yy,x+w,yy+hh,r); g.arcTo(x+w,yy+hh,x,yy+hh,r); g.arcTo(x,yy+hh,x,yy,r); g.arcTo(x,yy,x+w,yy,r); g.closePath(); } };
+  (function(){ const size=150, cx=W/2, oy=70, s=size/100, ox=cx-size/2;
+    g.fillStyle=neon;
+    [[6,38,13,24,6],[24,28,13,44,6],[37,45,26,10,5],[63,28,13,44,6],[81,38,13,24,6]].forEach(r=>{ rrect(ox+r[0]*s,oy+r[1]*s,r[2]*s,r[3]*s,r[4]*s); g.fill(); });
+  })();
   g.textAlign='center';
-  g.fillStyle=neon; g.font='900 96px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('GYMBRO', W/2, 190);
-  g.fillStyle=muted; g.font='800 34px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('WRAPPED · '+label.toUpperCase(), W/2, 246);
+  g.fillStyle=neon; g.font='900 96px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('GYMBRO', W/2, 320);
+  g.fillStyle=muted; g.font='800 34px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('WRAPPED · '+label.toUpperCase(), W/2, 376);
   const rows=[['Workouts',fmtNum(st.workouts)],['Kg lifted',fmtNum(st.volume)],['Shakes',fmtNum(shk)]];
   if(fav) rows.push(['Top muscle',fav]);
   if(heavy>0) rows.push(['Heaviest lift',fmtDec(heavy)+' kg']);
-  let y=430;
+  let y=520;
   rows.forEach(r=>{
     g.textAlign='left'; g.fillStyle=muted; g.font='800 40px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(r[0].toUpperCase(),110,y);
     g.textAlign='right'; g.fillStyle=neon2; g.font='900 66px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(String(r[1]),W-110,y+4);
