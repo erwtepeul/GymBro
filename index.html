@@ -453,7 +453,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.19.3</div>
+    <div class="ver-foot" id="verLabel">v1.19.4</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -501,7 +501,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.19.3';
+const APP_VERSION='1.19.4';
 
 /* storage */
 const DB={
@@ -1093,11 +1093,17 @@ function renderMusclePie(){
   if(!total){ box.innerHTML='<div class="empty">Tag exercises with a muscle group to see your breakdown.</div>'; return; }
   const order=GROUPS.filter(g=>counts[g]);
   const COL = theme==='night' ? GROUP_GREYS : GROUP_COLORS;
-  const C=2*Math.PI*54; let acc=0, circles='';
-  order.forEach(g=>{ const len=C*(counts[g]/total);
-    circles+='<circle cx="75" cy="75" r="54" fill="none" stroke="'+COL[g]+'" stroke-width="22" '
-      +'stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-acc).toFixed(2)+'" transform="rotate(-90 75 75)"/>';
-    acc+=len; });
+  const r=54, cx=75, cy=75;
+  const pt=ang=>{ const a=(ang-90)*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; };
+  let circles='';
+  if(order.length===1){
+    circles='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+COL[order[0]]+'" stroke-width="22"/>';
+  } else {
+    let a0=0;
+    order.forEach(g=>{ const a1=a0+counts[g]/total*360; const [x0,y0]=pt(a0),[x1,y1]=pt(a1); const large=(a1-a0)>180?1:0;
+      circles+='<path d="M '+x0.toFixed(2)+' '+y0.toFixed(2)+' A '+r+' '+r+' 0 '+large+' 1 '+x1.toFixed(2)+' '+y1.toFixed(2)+'" fill="none" stroke="'+COL[g]+'" stroke-width="22"/>';
+      a0=a1; });
+  }
   const svg='<svg viewBox="0 0 150 150" class="pie">'+circles+'</svg>';
   const legend='<div class="legend">'+order.map(g=>'<div class="lg"><span class="dot" style="background:'+COL[g]+'"></span>'+g+' <b>'+Math.round(counts[g]/total*100)+'%</b></div>').join('')+'</div>';
   box.innerHTML='<div class="pie-wrap">'+svg+legend+'</div>';
