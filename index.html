@@ -440,7 +440,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.16.2</div>
+    <div class="ver-foot" id="verLabel">v1.17.0</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -486,7 +486,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.16.2';
+const APP_VERSION='1.17.0';
 
 /* storage */
 const DB={
@@ -529,6 +529,50 @@ if(localStorage.getItem('gymbro_'+SHAKE_SEED)!=='done'){
   shakes['2026-07-20']=true; shakes['2026-07-21']=true;
   DB.set('shakes',shakes);
   localStorage.setItem('gymbro_'+SHAKE_SEED,'done');
+}
+
+/* one-time: fill ~14 weeks of sample data (3 workouts/week) for testing */
+function seedTestData(){
+  const pool={
+    Chest:['Bench press','Incline press','Chest fly','Push-up'],
+    Back:['Deadlift','Barbell row','Lat pulldown','Pull-up'],
+    Shoulders:['Overhead press','Lateral raise','Face pull'],
+    Arms:['Biceps curl','Triceps pushdown','Hammer curl'],
+    Legs:['Squat','Leg press','Walking lunge','Leg curl'],
+    Core:['Plank','Cable crunch','Hanging leg raise'],
+    Cardio:['Running','Cycling','Rowing']
+  };
+  const baseW={'Bench press':60,'Incline press':50,'Chest fly':14,'Push-up':0,'Deadlift':90,'Barbell row':60,'Lat pulldown':55,'Pull-up':0,'Overhead press':40,'Lateral raise':10,'Face pull':25,'Biceps curl':16,'Triceps pushdown':25,'Hammer curl':14,'Squat':80,'Leg press':140,'Walking lunge':20,'Leg curl':40,'Plank':0,'Cable crunch':30,'Hanging leg raise':0};
+  const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const pick=a=>a[rnd(0,a.length-1)];
+  const splits=[['Chest','Shoulders','Arms'],['Back','Arms','Core'],['Legs','Core','Cardio']];
+  const weeks=14, startMon=mondayOf(); startMon.setDate(startMon.getDate()-7*(weeks-1));
+  const today=todayKey();
+  for(let w=0;w<weeks;w++){
+    const prog=weeks>1?w/(weeks-1):1;
+    [0,2,4].forEach((off,di)=>{
+      const d=new Date(startMon); d.setDate(startMon.getDate()+7*w+off); const k=todayKey(d);
+      if(k>today) return; if(exercises[k]&&exercises[k].length) return;
+      const groups=splits[di%3], entries=[];
+      groups.forEach(g=>{
+        const name=pick(pool[g]);
+        if(g==='Cardio'){ entries.push({name,group:'Cardio',weight:null,sets:null,reps:null,dist:+(rnd(3,10)+Math.random()).toFixed(1),mins:rnd(20,45)}); }
+        else { const base=baseW[name]||20; const wt=base>0?Math.round((base*(1+prog*0.15)+rnd(-2,2))*2)/2:null; entries.push({name,group:g,weight:wt,sets:rnd(3,5),reps:rnd(5,12),dist:null,mins:null}); }
+      });
+      if(Math.random()<0.5){ const g=pick(groups.filter(x=>x!=='Cardio')); const name=pick(pool[g]); const base=baseW[name]||20; entries.push({name,group:g,weight:base>0?Math.round((base*(1+prog*0.15))*2)/2:null,sets:rnd(3,4),reps:rnd(6,12),dist:null,mins:null}); }
+      exercises[k]=entries;
+    });
+    const monDate=new Date(startMon); monDate.setDate(startMon.getDate()+7*w); const mk=todayKey(monDate);
+    if(mk<=today && weights[mk]==null) weights[mk]=+(80-prog*4+(Math.random()*0.8-0.4)).toFixed(1);
+  }
+  for(let i=0;i<7*weeks;i++){ const d=new Date(startMon); d.setDate(startMon.getDate()+i); const k=todayKey(d);
+    if(k>today) break; if(shakes[k]==null && Math.random()<0.85) shakes[k]=true; }
+  DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes);
+}
+const FILL_SEED='filltest-v1';
+if(localStorage.getItem('gymbro_'+FILL_SEED)!=='done'){
+  seedTestData();
+  localStorage.setItem('gymbro_'+FILL_SEED,'done');
 }
 
 document.getElementById('verLabel').textContent='v'+APP_VERSION;
