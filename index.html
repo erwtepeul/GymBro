@@ -278,10 +278,10 @@
   .copyr{text-align:center;font-size:10px;color:var(--muted);margin-top:6px;font-weight:600;letter-spacing:.5px}
 
   /* nav */
-  nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;border-top:1px solid var(--line);
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;border-top:1px solid var(--line);
     background:rgba(10,10,15,.92);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom)}
-  nav button{flex:1;min-width:0;background:none;color:var(--muted);border:none;border-radius:0;box-shadow:none;
-    padding:12px 0 10px;font-size:9px;font-weight:800;letter-spacing:.2px;white-space:nowrap;
+  nav button{flex:0 0 auto;min-width:0;background:none;color:var(--muted);border:none;border-radius:0;box-shadow:none;
+    padding:12px 11px 10px;font-size:9px;font-weight:800;letter-spacing:.2px;white-space:nowrap;
     display:flex;flex-direction:column;align-items:center;gap:4px;text-transform:uppercase}
   nav button .ico{width:24px;height:24px;opacity:.85}
   nav button .ico svg{width:24px;height:24px;display:block}
@@ -453,7 +453,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.19.0</div>
+    <div class="ver-foot" id="verLabel">v1.19.1</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -501,7 +501,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.19.0';
+const APP_VERSION='1.19.1';
 
 /* storage */
 const DB={
