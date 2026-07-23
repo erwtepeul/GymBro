@@ -44,23 +44,23 @@
     --glow-cy:0 0 12px rgba(45,212,191,.5), 0 0 26px rgba(45,212,191,.2);
     --ga:rgba(14,165,233,.12); --gb:rgba(45,212,191,.08); --focus:rgba(14,165,233,.15);
   }
-  html[data-theme="rose"]{
-    --neon:#ff3d7f; --neon2:#ff9ec4;
-    --glow:0 0 12px rgba(255,61,127,.55), 0 0 26px rgba(255,61,127,.25);
-    --glow-cy:0 0 12px rgba(255,158,196,.5), 0 0 26px rgba(255,158,196,.2);
-    --ga:rgba(255,61,127,.10); --gb:rgba(255,158,196,.08); --focus:rgba(255,61,127,.15);
+  html[data-theme="crimson"]{
+    --neon:#ff2e50; --neon2:#ff9db0;
+    --glow:0 0 12px rgba(255,46,80,.55), 0 0 26px rgba(255,46,80,.25);
+    --glow-cy:0 0 12px rgba(255,157,176,.5), 0 0 26px rgba(255,157,176,.2);
+    --ga:rgba(255,46,80,.10); --gb:rgba(255,157,176,.08); --focus:rgba(255,46,80,.15);
   }
-  html[data-theme="gold"]{
-    --neon:#ffcc33; --neon2:#ffe066;
-    --glow:0 0 12px rgba(255,204,51,.55), 0 0 26px rgba(255,204,51,.25);
-    --glow-cy:0 0 12px rgba(255,224,102,.5), 0 0 26px rgba(255,224,102,.2);
-    --ga:rgba(255,204,51,.12); --gb:rgba(255,224,102,.08); --focus:rgba(255,204,51,.15);
+  html[data-theme="forest"]{
+    --neon:#34d399; --neon2:#a7f3d0;
+    --glow:0 0 12px rgba(52,211,153,.55), 0 0 26px rgba(52,211,153,.25);
+    --glow-cy:0 0 12px rgba(167,243,208,.5), 0 0 26px rgba(167,243,208,.2);
+    --ga:rgba(52,211,153,.12); --gb:rgba(167,243,208,.08); --focus:rgba(52,211,153,.15);
   }
-  html[data-theme="cyber"]{
-    --neon:#ff2bd6; --neon2:#00e5ff;
-    --glow:0 0 12px rgba(255,43,214,.55), 0 0 26px rgba(255,43,214,.25);
-    --glow-cy:0 0 12px rgba(0,229,255,.5), 0 0 26px rgba(0,229,255,.2);
-    --ga:rgba(255,43,214,.12); --gb:rgba(0,229,255,.08); --focus:rgba(255,43,214,.15);
+  html[data-theme="sunset"]{
+    --neon:#ff6ec7; --neon2:#ffa94d;
+    --glow:0 0 12px rgba(255,110,199,.55), 0 0 26px rgba(255,110,199,.25);
+    --glow-cy:0 0 12px rgba(255,169,77,.5), 0 0 26px rgba(255,169,77,.2);
+    --ga:rgba(255,110,199,.12); --gb:rgba(255,169,77,.08); --focus:rgba(255,110,199,.15);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
@@ -477,7 +477,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.20.0</div>
+    <div class="ver-foot" id="verLabel">v1.20.1</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -525,7 +525,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.20.0';
+const APP_VERSION='1.20.1';
 
 /* storage */
 const DB={
@@ -558,7 +558,7 @@ let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 /* theme */
-const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'rose',name:'Rose',a:'#ff3d7f',b:'#ff9ec4'},{id:'gold',name:'Gold',a:'#ffcc33',b:'#ffe066'},{id:'cyber',name:'Cyber',a:'#ff2bd6',b:'#00e5ff'}];
+const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'crimson',name:'Crimson',a:'#ff2e50',b:'#ff9db0'},{id:'forest',name:'Forest',a:'#34d399',b:'#a7f3d0'},{id:'sunset',name:'Sunset',a:'#ff6ec7',b:'#ffa94d'}];
 if(!THEMES.some(t=>t.id===theme)){ theme='neon'; DB.set('theme',theme); }
 function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
 applyTheme();
