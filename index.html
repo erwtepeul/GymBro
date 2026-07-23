@@ -133,7 +133,7 @@
   .weekrow .kg{font-weight:900;color:var(--neon)}
   .weekrow .muted{color:var(--muted);font-weight:600}
   .delta{font-size:12px;font-weight:800;margin-left:8px}
-  .delta.up{color:var(--danger)}.delta.down{color:var(--neon2)}
+  .delta.up{color:var(--danger)}.delta.down{color:var(--neon2)}.delta.even{color:var(--muted)}
 
   /* toast */
   .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(20px);
@@ -440,7 +440,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.17.1</div>
+    <div class="ver-foot" id="verLabel">v1.17.2</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -486,7 +486,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.17.1';
+const APP_VERSION='1.17.2';
 
 /* storage */
 const DB={
@@ -968,8 +968,9 @@ function renderWeight(){
   if(!keys.length){ hist.innerHTML='<div class="empty">No weigh-ins yet.</div>'; return; }
   hist.innerHTML='';
   keys.forEach((k,i)=>{
-    const prev=keys[i+1]; let delta='';
-    if(prev!=null){ const dv=+(weights[k]-weights[prev]).toFixed(1); if(dv!==0)delta='<span class="delta '+(dv>0?'up':'down')+'">'+(dv>0?'+':'')+fmtDec(dv)+'</span>'; }
+    const prev=keys[i+1]; let delta;
+    if(prev!=null){ const dv=+(weights[k]-weights[prev]).toFixed(1); const cls=dv>0?'up':(dv<0?'down':'even'); delta='<span class="delta '+cls+'">'+(dv>0?'+':'')+fmtDec(dv)+'</span>'; }
+    else delta='<span class="delta even">–</span>';
     const row=document.createElement('div'); row.className='weekrow';
     row.innerHTML='<span class="wk">'+prettyDate(k)+'</span><span class="kg">'+fmtDec(weights[k])+' kg'+delta+'</span>';
     hist.appendChild(row);
