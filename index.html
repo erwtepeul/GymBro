@@ -511,7 +511,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.25.2</div>
+    <div class="ver-foot" id="verLabel">v1.26.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -577,7 +577,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.25.2';
+const APP_VERSION='1.26.0';
 
 /* storage */
 const DB={
@@ -1350,40 +1350,88 @@ function renderHeatmap(){
 function periodShakesCount(pred){ return Object.keys(shakes).filter(k=>shakes[k]&&pred(k)).length; }
 function favGroupIn(pred){ const c={}; let bn=null,bc=0; Object.keys(exercises).forEach(k=>{ if(!pred(k))return; exercises[k].forEach(it=>{ if(!it.group)return; c[it.group]=(c[it.group]||0)+1; if(c[it.group]>bc){bc=c[it.group];bn=it.group;} }); }); return bn; }
 function heaviestIn(pred){ let hh=0; Object.keys(exercises).forEach(k=>{ if(!pred(k))return; exercises[k].forEach(it=>{ if(it.weight!=null)hh=Math.max(hh,it.weight); }); }); return hh; }
+/* compact dependency-free animated GIF encoder */
+function _gifStream(){ let buf=new Uint8Array(1<<16),n=0;
+  const ensure=k=>{ if(n+k<=buf.length)return; let nb=new Uint8Array(Math.max(buf.length*2,n+k)); nb.set(buf); buf=nb; };
+  return { byte(b){ensure(1);buf[n++]=b&255;}, bytes(a){ensure(a.length);for(let i=0;i<a.length;i++)buf[n++]=a[i]&255;},
+    u16(v){this.byte(v&255);this.byte((v>>8)&255);}, str(s){for(let i=0;i<s.length;i++)this.byte(s.charCodeAt(i));}, out(){return buf.slice(0,n);} };
+}
+function _lzw(index,depth,S){
+  const BITS=12,HSIZE=5003,MASKS=[0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535];
+  const initCodeSize=Math.max(2,depth); const accum=new Uint8Array(256); const htab=new Int32Array(HSIZE); const codetab=new Int32Array(HSIZE); htab.fill(-1);
+  let cur_accum=0,cur_bits=0; const init_bits=initCodeSize+1,g_init_bits=init_bits; let clear_flg=false,n_bits=g_init_bits,maxcode=(1<<n_bits)-1;
+  const ClearCode=1<<(init_bits-1),EOFCode=ClearCode+1; let free_ent=ClearCode+2,a_count=0,ent=index[0];
+  let hshift=0; for(let f=HSIZE;f<65536;f*=2)++hshift; hshift=8-hshift; S.byte(initCodeSize);
+  function output(code){ cur_accum&=MASKS[cur_bits]; if(cur_bits>0)cur_accum|=code<<cur_bits; else cur_accum=code; cur_bits+=n_bits;
+    while(cur_bits>=8){ accum[a_count++]=cur_accum&255; if(a_count>=254){S.byte(a_count);S.bytes(accum.subarray(0,a_count));a_count=0;} cur_accum>>=8; cur_bits-=8; }
+    if(free_ent>maxcode||clear_flg){ if(clear_flg){n_bits=g_init_bits;maxcode=(1<<n_bits)-1;clear_flg=false;} else {++n_bits;maxcode=n_bits===BITS?(1<<n_bits):(1<<n_bits)-1;} }
+    if(code===EOFCode){ while(cur_bits>0){ accum[a_count++]=cur_accum&255; if(a_count>=254){S.byte(a_count);S.bytes(accum.subarray(0,a_count));a_count=0;} cur_accum>>=8; cur_bits-=8; } if(a_count>0){S.byte(a_count);S.bytes(accum.subarray(0,a_count));a_count=0;} } }
+  output(ClearCode);
+  for(let i=1;i<index.length;i++){ const c=index[i]; const fcode=(c<<BITS)+ent; let x=(c<<hshift)^ent; let matched=false;
+    if(htab[x]===fcode){ ent=codetab[x]; continue; }
+    let disp=x===0?1:HSIZE-x;
+    while(htab[x]>=0){ x-=disp; if(x<0)x+=HSIZE; if(htab[x]===fcode){ ent=codetab[x]; matched=true; break; } }
+    if(matched) continue;
+    output(ent); ent=c;
+    if(free_ent<(1<<BITS)){ codetab[x]=free_ent++; htab[x]=fcode; } else { htab.fill(-1); free_ent=ClearCode+2; clear_flg=true; output(ClearCode); } }
+  output(ent); output(EOFCode); S.byte(0);
+}
+function _encodeGIF(w,h,palette,frames,repeat){
+  const S=_gifStream(); S.str('GIF89a');
+  S.u16(w); S.u16(h); S.byte(0x80|0x70|0x07); S.byte(0); S.byte(0);
+  for(let i=0;i<256;i++){ const c=palette[i]||[0,0,0]; S.byte(c[0]);S.byte(c[1]);S.byte(c[2]); }
+  S.byte(0x21);S.byte(0xFF);S.byte(11); S.str('NETSCAPE2.0'); S.byte(3);S.byte(1); S.u16(repeat||0); S.byte(0);
+  frames.forEach(fr=>{ S.byte(0x21);S.byte(0xF9);S.byte(4); S.byte(0); S.u16(Math.round(fr.delay/10)); S.byte(0); S.byte(0);
+    S.byte(0x2C); S.u16(0);S.u16(0); S.u16(w);S.u16(h); S.byte(0); _lzw(fr.index,8,S); });
+  S.byte(0x3B); return S.out();
+}
+function _hexRGB(h){ h=(h||'').replace('#',''); if(h.length===3)h=h.split('').map(c=>c+c).join(''); return [parseInt(h.slice(0,2),16)||0,parseInt(h.slice(2,4),16)||0,parseInt(h.slice(4,6),16)||0]; }
+function _ramp(a,b,n){ const o=[]; for(let i=0;i<n;i++){ const t=n<2?0:i/(n-1); o.push([Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t)]); } return o; }
+function _mapPalette(img,palette){ const d=img.data,len=img.width*img.height,out=new Uint8Array(len),cache={};
+  for(let p=0,i=0;p<len;p++,i+=4){ const r=d[i],gg=d[i+1],b=d[i+2]; const key=(r>>3<<10)|(gg>>3<<5)|(b>>3); let idx=cache[key];
+    if(idx===undefined){ let best=0,bd=1e9; for(let j=0;j<palette.length;j++){ const c=palette[j]; const dr=c[0]-r,dg=c[1]-gg,db=c[2]-b,dist=dr*dr+dg*dg+db*db; if(dist<bd){bd=dist;best=j; if(!dist)break;} } idx=cache[key]=best; } out[p]=idx; }
+  return out;
+}
 function generateRecap(period){
-  const now=new Date(); let pred,label;
-  if(period==='month'){ const ym=todayKey(now).slice(0,7); pred=k=>k.slice(0,7)===ym; label=now.toLocaleDateString(undefined,{month:'long',year:'numeric'}); }
-  else { const yr=String(now.getFullYear()); pred=k=>k.slice(0,4)===yr; label=yr; }
-  const st=periodStats(pred), shk=periodShakesCount(pred), fav=favGroupIn(pred), heavy=heaviestIn(pred);
-  const cs=getComputedStyle(document.documentElement);
-  const V=(n,f)=>{ const v=cs.getPropertyValue(n).trim(); return v||f; };
-  const neon=V('--neon','#39ff14'), neon2=V('--neon2','#00f0ff'), muted=V('--muted','#7a7a8c'), bg=V('--bg','#0a0a0f');
-  const W=1080,H=1350, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
-  g.fillStyle=bg; g.fillRect(0,0,W,H);
-  const grd=g.createRadialGradient(W/2,-80,60,W/2,-80,1000); grd.addColorStop(0,neon+'40'); grd.addColorStop(1,'rgba(0,0,0,0)');
-  g.fillStyle=grd; g.fillRect(0,0,W,760);
-  // dumbbell logo
-  const rrect=(x,yy,w,hh,r)=>{ if(g.roundRect){ g.beginPath(); g.roundRect(x,yy,w,hh,r); } else { g.beginPath(); g.moveTo(x+r,yy); g.arcTo(x+w,yy,x+w,yy+hh,r); g.arcTo(x+w,yy+hh,x,yy+hh,r); g.arcTo(x,yy+hh,x,yy,r); g.arcTo(x,yy,x+w,yy,r); g.closePath(); } };
-  (function(){ const size=150, cx=W/2, oy=70, s=size/100, ox=cx-size/2;
-    g.fillStyle=neon;
-    [[6,38,13,24,6],[24,28,13,44,6],[37,45,26,10,5],[63,28,13,44,6],[81,38,13,24,6]].forEach(r=>{ rrect(ox+r[0]*s,oy+r[1]*s,r[2]*s,r[3]*s,r[4]*s); g.fill(); });
-  })();
-  g.textAlign='center';
-  g.fillStyle=neon; g.font='900 96px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('GYMBRO', W/2, 320);
-  g.fillStyle=muted; g.font='800 34px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('WRAPPED · '+label.toUpperCase(), W/2, 376);
-  const rows=[['Workouts',fmtNum(st.workouts)],['Kg lifted',fmtNum(st.volume)],['Shakes',fmtNum(shk)]];
-  if(fav) rows.push(['Top muscle',fav]);
-  if(heavy>0) rows.push(['Heaviest lift',fmtDec(heavy)+' kg']);
-  let y=520;
-  rows.forEach(r=>{
-    g.textAlign='left'; g.fillStyle=muted; g.font='800 40px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(r[0].toUpperCase(),110,y);
-    g.textAlign='right'; g.fillStyle=neon2; g.font='900 66px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(String(r[1]),W-110,y+4);
-    y+=155; g.strokeStyle=muted+'40'; g.lineWidth=2; g.beginPath(); g.moveTo(110,y-74); g.lineTo(W-110,y-74); g.stroke();
-  });
-  g.textAlign='center'; g.fillStyle=muted; g.font='800 30px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('BUILT DIFFERENT. TRACKED BETTER.',W/2,H-70);
-  c.toBlob(b=>{ const url=URL.createObjectURL(b); const a=document.createElement('a'); a.href=url;
-    a.download='gymbro-wrapped-'+(period==='month'?todayKey().slice(0,7):new Date().getFullYear())+'.png';
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showToast('Recap saved ✓'); },'image/png');
+  showToast('Rendering GIF…');
+  setTimeout(()=>{
+    const now=new Date(); let pred,label;
+    if(period==='month'){ const ym=todayKey(now).slice(0,7); pred=k=>k.slice(0,7)===ym; label=now.toLocaleDateString(undefined,{month:'long',year:'numeric'}); }
+    else { const yr=String(now.getFullYear()); pred=k=>k.slice(0,4)===yr; label=yr; }
+    const st=periodStats(pred), shk=periodShakesCount(pred), fav=favGroupIn(pred), heavy=heaviestIn(pred);
+    const cs=getComputedStyle(document.documentElement);
+    const V=(n,f)=>{ const v=cs.getPropertyValue(n).trim(); return v||f; };
+    const neon=V('--neon','#39ff14'), neon2=V('--neon2','#00f0ff'), muted=V('--muted','#7a7a8c'), bg=V('--bg','#0a0a0f');
+    const palette=[_hexRGB(bg),[255,255,255]].concat(_ramp(_hexRGB(bg),_hexRGB(neon),10),_ramp(_hexRGB(bg),_hexRGB(neon2),10),_ramp(_hexRGB(bg),_hexRGB(muted),6));
+    const W=600,H=750, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+    const rrect=(x,yy,w,hh,r)=>{ if(g.roundRect){ g.beginPath(); g.roundRect(x,yy,w,hh,r);} else { g.beginPath(); g.moveTo(x+r,yy); g.arcTo(x+w,yy,x+w,yy+hh,r); g.arcTo(x+w,yy+hh,x,yy+hh,r); g.arcTo(x,yy+hh,x,yy,r); g.arcTo(x,yy,x+w,yy,r); g.closePath(); } };
+    const numRows=[['Workouts',st.workouts,fmtNum],['Kg lifted',st.volume,fmtNum],['Shakes',shk,fmtNum]];
+    if(heavy>0) numRows.push(['Heaviest lift',heavy,v=>fmtDec(v)+' kg']);
+    function draw(prog){
+      const e=1-Math.pow(1-prog,3);
+      g.setTransform(W/1080,0,0,H/1350,0,0);
+      g.fillStyle=bg; g.fillRect(0,0,1080,1350);
+      const grd=g.createRadialGradient(540,-80,60,540,-80,1000); grd.addColorStop(0,neon+'40'); grd.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=grd; g.fillRect(0,0,1080,760);
+      (function(){ const size=150,cx=540,oy=70,s=size/100,ox=cx-size/2; g.fillStyle=neon;
+        [[6,38,13,24,6],[24,28,13,44,6],[37,45,26,10,5],[63,28,13,44,6],[81,38,13,24,6]].forEach(r=>{ rrect(ox+r[0]*s,oy+r[1]*s,r[2]*s,r[3]*s,r[4]*s); g.fill(); }); })();
+      g.textAlign='center'; g.fillStyle=neon; g.font='900 96px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('GYMBRO',540,320);
+      g.fillStyle=muted; g.font='800 34px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('WRAPPED · '+label.toUpperCase(),540,376);
+      let y=520;
+      numRows.forEach(r=>{ g.textAlign='left'; g.fillStyle=muted; g.font='800 40px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(r[0].toUpperCase(),110,y);
+        g.textAlign='right'; g.fillStyle=neon2; g.font='900 66px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(r[2](Math.round(r[1]*e)),970,y+4);
+        y+=130; g.strokeStyle=muted; g.globalAlpha=.25; g.lineWidth=2; g.beginPath(); g.moveTo(110,y-64); g.lineTo(970,y-64); g.stroke(); g.globalAlpha=1; });
+      if(fav){ g.textAlign='left'; g.fillStyle=muted; g.font='800 40px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('TOP MUSCLE',110,y);
+        g.textAlign='right'; g.fillStyle=neon2; g.font='900 56px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText(fav,970,y+2); }
+      g.textAlign='center'; g.fillStyle=muted; g.font='800 30px -apple-system,"Segoe UI",Roboto,sans-serif'; g.fillText('BUILT DIFFERENT. TRACKED BETTER.',540,1290);
+    }
+    const frames=[], N=16;
+    for(let f=0;f<N;f++){ draw((f+1)/N); frames.push({index:_mapPalette(g.getImageData(0,0,W,H),palette),delay:70}); }
+    draw(1); frames.push({index:_mapPalette(g.getImageData(0,0,W,H),palette),delay:1600});
+    const data=_encodeGIF(W,H,palette,frames,0);
+    const blob=new Blob([data],{type:'image/gif'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url;
+    a.download='gymbro-wrapped-'+(period==='month'?todayKey().slice(0,7):new Date().getFullYear())+'.gif';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showToast('Recap GIF saved ✓');
+  },70);
 }
 document.getElementById('recapMonth').onclick=()=>generateRecap('month');
 document.getElementById('recapYear').onclick=()=>generateRecap('year');
