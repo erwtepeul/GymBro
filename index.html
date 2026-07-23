@@ -511,7 +511,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.24.2</div>
+    <div class="ver-foot" id="verLabel">v1.24.3</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -577,7 +577,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.24.2';
+const APP_VERSION='1.24.3';
 
 /* storage */
 const DB={
@@ -708,7 +708,7 @@ function buzz(p){ if(haptics && navigator.vibrate){ try{ navigator.vibrate(p); }
 let _ac;
 function beep(freq,dur){ if(!sound) return; try{ _ac=_ac||new (window.AudioContext||window.webkitAudioContext)(); const o=_ac.createOscillator(),g=_ac.createGain(); o.type='sine'; o.frequency.value=freq||660; o.connect(g); g.connect(_ac.destination); const t=_ac.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.14,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.12)); o.start(t); o.stop(t+(dur||0.13)); }catch(e){} }
 function flash(){ if(reduceGlow) return; const f=document.getElementById('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
-function countUp(el,to,fmt){ if(reduceGlow){ el.textContent=fmt(to); return; } const dur=1400,s=performance.now(); (function step(now){ const p=Math.min(1,(now-s)/dur); el.textContent=fmt(Math.round(to*(1-Math.pow(1-p,3)))); if(p<1) requestAnimationFrame(step); })(performance.now()); }
+function countUp(el,to,fmt){ const dur=1400,s=performance.now(); (function step(now){ const p=Math.min(1,(now-s)/dur); el.textContent=fmt(Math.round(to*(1-Math.pow(1-p,3)))); if(p<1) requestAnimationFrame(step); })(performance.now()); }
 function animateCU(box){ box.querySelectorAll('.cu').forEach(el=>countUp(el,+el.dataset.to,fmtNum)); }
 
 /* muscle groups */
