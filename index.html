@@ -453,7 +453,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.19.2</div>
+    <div class="ver-foot" id="verLabel">v1.19.3</div>
     <div class="copyr">© Erwin Koot | all rights reserved.</div>
   </section>
 </main>
@@ -501,7 +501,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.19.2';
+const APP_VERSION='1.19.3';
 
 /* storage */
 const DB={
@@ -1194,8 +1194,8 @@ function renderStats(){
     [fmtNum(active),'Active days',''],
     [fmtDec(heaviest),'kg heaviest',''],
     [fmtNum(totalPRs()),'PRs hit',''],
-    [chgStr,'Weight change','txt'],
-    [fav?fav.name:'—','Favourite','txt wide']
+    [chgStr,'Weight change',''],
+    [fav?fav.name:'—','Favourite','wide']
   ];
   document.getElementById('statMilestones').innerHTML='<div class="stat-grid">'+tiles.map(t=>{
     const tc='stat-tile'+(t[2].indexOf('wide')>=0?' wide':'');
