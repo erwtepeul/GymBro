@@ -511,7 +511,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.26.0</div>
+    <div class="ver-foot" id="verLabel">v1.26.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -577,7 +577,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.26.0';
+const APP_VERSION='1.26.1';
 
 /* storage */
 const DB={
@@ -750,7 +750,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
-const DASH_SECS=[['week','This week'],['month','This month'],['year','This year'],['muscle','Muscle balance'],['trend','Volume trend'],['heat','Year heatmap'],['miles','Milestones'],['recap','Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['miles','🏆 Milestones'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
