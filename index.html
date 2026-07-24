@@ -221,6 +221,7 @@
   .sum-row.life .stat b{color:var(--neon2)}
   .wsum{display:flex;justify-content:space-around;text-align:center;gap:8px}
   .wsum .val{font-size:32px;font-weight:900;color:var(--neon);text-shadow:var(--glow);line-height:1}
+  #todaySnap .val{color:var(--neon2);text-shadow:var(--glow-cy)}
   .wsum .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:8px}
 
   /* stats page */
@@ -469,7 +470,6 @@
     <div class="dsec" data-sec="muscle"><h2>Muscle Balance</h2><div class="card"><div id="statPie"></div></div></div>
     <div class="dsec" data-sec="trend"><h2>Volume Trend</h2><div class="card"><div id="statTrend"></div></div></div>
     <div class="dsec" data-sec="heat"><h2>Year Heatmap</h2><div class="card"><div id="statHeat"></div></div></div>
-    <div class="dsec" data-sec="miles"><h2>Milestones</h2><div class="card"><div id="statMilestones"></div></div></div>
     <div class="dsec" data-sec="badges"><h2>Achievements</h2><div class="card"><div id="statBadges"></div></div></div>
     <div class="dsec" data-sec="recap"><h2>Recap</h2>
       <div class="row" style="gap:10px">
@@ -526,7 +526,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.27.0</div>
+    <div class="ver-foot" id="verLabel">v1.27.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -592,7 +592,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.27.0';
+const APP_VERSION='1.27.1';
 
 /* storage */
 const DB={
@@ -625,7 +625,7 @@ let backupDays=DB.get('backupDays',7);       // days between backup reminders (0
 let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
 let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
-function defaultDash(){ return {week:1,month:1,year:1,muscle:1,trend:1,heat:1,miles:1,badges:1,recap:1}; }
+function defaultDash(){ return {week:1,month:1,year:1,muscle:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -766,7 +766,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['miles','🏆 Milestones'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -956,8 +956,8 @@ function renderSnapshot(){
 function renderOnThisDay(){
   const el=document.getElementById('onThisDay'); if(!el) return;
   const d=new Date(); d.setDate(d.getDate()-7); const k=todayKey(d), arr=exercises[k]||[];
-  if(!arr.length){ el.innerHTML='<div class="empty">Nothing logged a week ago ('+prettyDate(k)+').</div>'; return; }
-  el.innerHTML='<div class="hint" style="margin:0 0 8px">'+prettyDate(k)+'</div>'+arr.map(it=>'<div class="weekrow"><span class="muted link">'+it.name+'</span><span class="kg">'+fmtEntry(it)+'</span></div>').join('');
+  if(!arr.length){ el.innerHTML='<div class="empty">Nothing logged a week ago.</div>'; return; }
+  el.innerHTML=arr.map(it=>'<div class="weekrow"><span class="muted link">'+it.name+'</span><span class="kg">'+fmtEntry(it)+'</span></div>').join('');
   el.querySelectorAll('.link').forEach((sp,i)=>sp.onclick=()=>openExerciseHistory(arr[i].name));
 }
 
@@ -1478,6 +1478,8 @@ const ACHIEVEMENTS=[
   {icon:'🏋️',name:'100 kg lift',test:m=>m.heavy>=100},
   {icon:'🦍',name:'150 kg lift',test:m=>m.heavy>=150},
   {icon:'🏆',name:'10 PRs',test:m=>m.prs>=10},
+  {icon:'🎖️',name:'10.000 kg',test:m=>m.volume>=10000},
+  {icon:'🥈',name:'50.000 kg',test:m=>m.volume>=50000},
   {icon:'👑',name:'100.000 kg',test:m=>m.volume>=100000},
   {icon:'🥤',name:'7-day shakes',test:m=>m.shakeStreak>=7},
   {icon:'🔥',name:'30-day shakes',test:m=>m.shakeStreak>=30},
@@ -1505,31 +1507,6 @@ function renderStats(){
   renderMusclePie();
   renderHeatmap();
   renderAchievements();
-  let totVol=0,heaviest=0;
-  Object.values(exercises).forEach(a=>a.forEach(it=>{ totVol+=vol(it);
-    if(it.weight!=null) heaviest=Math.max(heaviest,it.weight); }));
-  const totWorkouts=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).length;
-  const totShakes=Object.keys(shakes).filter(k=>shakes[k]).length;
-  const active=new Set([...Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length), ...Object.keys(shakes).filter(k=>shakes[k])]).size;
-  const weighins=Object.keys(weights).length;
-  const fav=favoriteExercise();
-  const wk=Object.keys(weights).sort();
-  let chgStr='—';
-  if(wk.length>=2){ const chg=+(weights[wk[wk.length-1]]-weights[wk[0]]).toFixed(1); chgStr=(chg>0?'+':'')+fmtDec(chg)+' kg'; }
-  let cyclingMin=0; Object.values(exercises).forEach(a=>a.forEach(it=>{ if(norm(it.name)==='cycling' && it.mins!=null) cyclingMin+=it.mins; }));
-  const tiles=[
-    [fmtNum(active),'Active days',''],
-    [fmtDec(heaviest),'kg heaviest',''],
-    [fmtNum(totalPRs()),'PRs hit',''],
-    [fmtNum(cyclingMin),'Cycling min',''],
-    [chgStr,'Weight change',''],
-    [fav?fav.name:'—','Favourite','wide']
-  ];
-  document.getElementById('statMilestones').innerHTML='<div class="stat-grid">'+tiles.map(t=>{
-    const tc='stat-tile'+(t[2].indexOf('wide')>=0?' wide':'');
-    const nc='n'+(t[2].indexOf('txt')>=0?' txt':'');
-    return '<div class="'+tc+'"><div class="'+nc+'">'+t[0]+'</div><div class="l">'+t[1]+'</div></div>';
-  }).join('')+'</div>';
 }
 function renderLog(){
   calRef=new Date(); calRef.setDate(1);   // reset to current month each time Log opens
