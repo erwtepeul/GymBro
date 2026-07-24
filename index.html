@@ -526,7 +526,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.27.1</div>
+    <div class="ver-foot" id="verLabel">v1.28.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -592,7 +592,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.27.1';
+const APP_VERSION='1.28.0';
 
 /* storage */
 const DB={
@@ -1472,28 +1472,39 @@ document.getElementById('recapYear').onclick=()=>generateRecap('year');
 
 const ACHIEVEMENTS=[
   {icon:'🎯',name:'First rep',test:m=>m.workouts>=1},
-  {icon:'🔰',name:'5 workouts',test:m=>m.workouts>=5},
   {icon:'💪',name:'25 workouts',test:m=>m.workouts>=25},
   {icon:'💯',name:'100 workouts',test:m=>m.workouts>=100},
-  {icon:'🏋️',name:'100 kg lift',test:m=>m.heavy>=100},
-  {icon:'🦍',name:'150 kg lift',test:m=>m.heavy>=150},
-  {icon:'🏆',name:'10 PRs',test:m=>m.prs>=10},
+  {icon:'🦾',name:'250 workouts',test:m=>m.workouts>=250},
   {icon:'🎖️',name:'10.000 kg',test:m=>m.volume>=10000},
   {icon:'🥈',name:'50.000 kg',test:m=>m.volume>=50000},
-  {icon:'👑',name:'100.000 kg',test:m=>m.volume>=100000},
-  {icon:'🥤',name:'7-day shakes',test:m=>m.shakeStreak>=7},
+  {icon:'🥇',name:'100.000 kg',test:m=>m.volume>=100000},
+  {icon:'🌋',name:'500.000 kg',test:m=>m.volume>=500000},
+  {icon:'🥤',name:'3-day shakes',test:m=>m.shakeStreak>=3},
+  {icon:'🧋',name:'7-day shakes',test:m=>m.shakeStreak>=7},
   {icon:'🔥',name:'30-day shakes',test:m=>m.shakeStreak>=30},
-  {icon:'📅',name:'4-week streak',test:m=>m.weeklyStreak>=4},
-  {icon:'🚴',name:'100 cardio min',test:m=>m.cardioMin>=100},
-  {icon:'🧭',name:'10 exercises',test:m=>m.exercises>=10},
-  {icon:'⚖️',name:'Hit goal weight',test:m=>m.hitGoal}
+  {icon:'👑',name:'100-day shakes',test:m=>m.shakeStreak>=100},
+  {icon:'📅',name:'2-week streak',test:m=>m.weekStreak>=2},
+  {icon:'🗓️',name:'4-week streak',test:m=>m.weekStreak>=4},
+  {icon:'📆',name:'12-week streak',test:m=>m.weekStreak>=12},
+  {icon:'🏅',name:'26-week streak',test:m=>m.weekStreak>=26},
+  {icon:'🏋️',name:'Triple digits',test:m=>m.heavy>=100},
+  {icon:'🚴',name:'Spin doctor',test:m=>m.cardioMin>=100},
+  {icon:'🧭',name:'Variety pack',test:m=>m.exercises>=10},
+  {icon:'⚖️',name:'On target',test:m=>m.hitGoal}
 ];
+function longestWeekActiveStreak(){
+  const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
+  if(!days.length) return 0;
+  let mon=mondayOf(new Date(days[0]+'T00:00:00')); const end=mondayOf(); let best=0,cur=0;
+  while(mon<=end){ if(workoutsInWeek(mon)>=1){ cur++; best=Math.max(best,cur);} else cur=0; mon=new Date(mon); mon.setDate(mon.getDate()+7); }
+  return best;
+}
 function computeMetrics(){
   let volT=0,heavy=0,cardioMin=0,workouts=0; const names=new Set();
   Object.keys(exercises).forEach(k=>{ const arr=exercises[k]; if(!arr||!arr.length) return; workouts++;
     arr.forEach(it=>{ volT+=vol(it); if(it.weight!=null)heavy=Math.max(heavy,it.weight); if(it.mins!=null)cardioMin+=it.mins; names.add(norm(it.name)); }); });
   const wk=Object.keys(weights).sort(); const hitGoal=wk.length? weights[wk[wk.length-1]]<=goal : false;
-  return {workouts, volume:volT, heavy, cardioMin, exercises:names.size, prs:totalPRs(), shakeStreak:longestShakeStreak(), weeklyStreak:longestWeeklyStreak(), hitGoal};
+  return {workouts, volume:volT, heavy, cardioMin, exercises:names.size, prs:totalPRs(), shakeStreak:longestShakeStreak(), weekStreak:longestWeekActiveStreak(), hitGoal};
 }
 function renderAchievements(){
   const box=document.getElementById('statBadges'); const m=computeMetrics();
