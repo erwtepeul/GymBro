@@ -498,6 +498,7 @@
       <div class="set-row"><span>✨ Reduce glow</span><span class="val"><b id="setGlow">Off</b><button id="glowToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>📳 Haptics</span><span class="val"><b id="setHaptics">On</b><button id="hapticToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>🔊 Sound</span><span class="val"><b id="setSound">Off</b><button id="soundToggle" class="ghost">Toggle</button></span></div>
+      <div class="set-row"><span>🎉 Today confetti</span><span class="val"><b id="setConfetti">On</b><button id="confettiToggle" class="ghost">Toggle</button></span></div>
     </div>
 
     <h2>Goals</h2>
@@ -535,7 +536,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.29.3</div>
+    <div class="ver-foot" id="verLabel">v1.30.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -601,7 +602,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.29.3';
+const APP_VERSION='1.30.0';
 
 /* storage */
 const DB={
@@ -634,6 +635,7 @@ let backupDays=DB.get('backupDays',7);       // days between backup reminders (0
 let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
 let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
+let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
 function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
@@ -804,8 +806,10 @@ function renderSettings(){
   document.getElementById('setGlow').textContent=reduceGlow?'On':'Off';
   document.getElementById('setHaptics').textContent=haptics?'On':'Off';
   document.getElementById('setSound').textContent=sound?'On':'Off';
+  document.getElementById('setConfetti').textContent=snapConfetti?'On':'Off';
   document.getElementById('setBackup').textContent=backupDays>0?(backupDays+' day'+(backupDays>1?'s':'')):'Off';
 }
+document.getElementById('confettiToggle').onclick=()=>{ snapConfetti=!snapConfetti; DB.set('snapConfetti',snapConfetti); renderSettings(); };
 document.getElementById('glowToggle').onclick=()=>{ reduceGlow=!reduceGlow; DB.set('reduceGlow',reduceGlow); applyGlow(); renderSettings(); };
 document.getElementById('hapticToggle').onclick=()=>{ haptics=!haptics; DB.set('haptics',haptics); renderSettings(); if(haptics) buzz(20); };
 document.getElementById('soundToggle').onclick=()=>{ sound=!sound; DB.set('sound',sound); renderSettings(); if(sound) beep(700,0.12); };
@@ -974,7 +978,7 @@ function renderSnapshot(animate){
     +'<div><div class="val cu" data-to="'+cnt+'">'+fmtNum(cnt)+'</div><div class="lbl">Exercises</div></div>'
     +'<div><div class="val cu" data-to="'+v+'">'+fmtNum(v)+'</div><div class="lbl">kg Volume</div></div>'
     +'<div><div class="val">'+sh+'</div><div class="lbl">Shake</div></div></div>';
-  if(animate){ animateCU(el); if(cnt>0||v>0) setTimeout(()=>{ const t=el.querySelectorAll('.val')[1]; let ox,oy; if(t){ const r=t.getBoundingClientRect(); ox=r.left+r.width/2; oy=r.top+r.height/2; } confetti(ox,oy); },1500); }
+  if(animate){ animateCU(el); if(snapConfetti && (cnt>0||v>0)) setTimeout(()=>{ const t=el.querySelectorAll('.val')[1]; let ox,oy; if(t){ const r=t.getBoundingClientRect(); ox=r.left+r.width/2; oy=r.top+r.height/2; } confetti(ox,oy); },1500); }
 }
 function renderOnThisDay(){
   const el=document.getElementById('onThisDay'); if(!el) return;
@@ -1657,16 +1661,16 @@ document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false;
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true;
   groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
   applyGlow(); rebuildGroups();
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,theme,groups:groupCfg,dash};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1714,10 +1718,11 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.reduceGlow==='boolean') reduceGlow=d.reduceGlow;
       if(typeof d.haptics==='boolean') haptics=d.haptics;
       if(typeof d.sound==='boolean') sound=d.sound;
+      if(typeof d.snapConfetti==='boolean') snapConfetti=d.snapConfetti;
       if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
       if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
       if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
       applyTheme(); applyGlow(); rebuildGroups();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
       showToast('Backup imported ✓');
