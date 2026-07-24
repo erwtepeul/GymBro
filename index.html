@@ -511,7 +511,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.26.3</div>
+    <div class="ver-foot" id="verLabel">v1.26.4</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -577,7 +577,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.26.3';
+const APP_VERSION='1.26.4';
 
 /* storage */
 const DB={
@@ -1278,7 +1278,7 @@ function totalPRs(){
 }
 function favoriteExercise(){
   const cnt={}; let bn=null,bc=0;
-  Object.values(exercises).forEach(a=>a.forEach(it=>{ cnt[it.name]=(cnt[it.name]||0)+1; if(cnt[it.name]>bc){bc=cnt[it.name];bn=it.name;} }));
+  Object.values(exercises).forEach(a=>a.forEach(it=>{ if(norm(it.name)==='cycling') return; cnt[it.name]=(cnt[it.name]||0)+1; if(cnt[it.name]>bc){bc=cnt[it.name];bn=it.name;} }));
   return bn?{name:bn,count:bc}:null;
 }
 function renderVolumeTrend(){
@@ -1453,10 +1453,12 @@ function renderStats(){
   const wk=Object.keys(weights).sort();
   let chgStr='—';
   if(wk.length>=2){ const chg=+(weights[wk[wk.length-1]]-weights[wk[0]]).toFixed(1); chgStr=(chg>0?'+':'')+fmtDec(chg)+' kg'; }
+  let cyclingMin=0; Object.values(exercises).forEach(a=>a.forEach(it=>{ if(norm(it.name)==='cycling' && it.mins!=null) cyclingMin+=it.mins; }));
   const tiles=[
     [fmtNum(active),'Active days',''],
     [fmtDec(heaviest),'kg heaviest',''],
     [fmtNum(totalPRs()),'PRs hit',''],
+    [fmtNum(cyclingMin),'Cycling min',''],
     [chgStr,'Weight change',''],
     [fav?fav.name:'—','Favourite','wide']
   ];
