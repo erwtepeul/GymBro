@@ -535,7 +535,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.29.1</div>
+    <div class="ver-foot" id="verLabel">v1.29.2</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -601,7 +601,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.29.1';
+const APP_VERSION='1.29.2';
 
 /* storage */
 const DB={
@@ -769,7 +769,7 @@ function showView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   document.querySelector('main').scrollTop=0;
-  if(v==='today'){ renderSnapshot(); renderOnThisDay(); }
+  if(v==='today'){ renderSnapshot(true); renderOnThisDay(); }
   if(v==='add') renderExercises();
   if(v==='weight') renderWeight();
   if(v==='log') renderLog();
@@ -965,14 +965,15 @@ function renderExercises(){
   renderList('addList', d);
   renderSnapshot();
 }
-function renderSnapshot(){
+function renderSnapshot(animate){
   const el=document.getElementById('todaySnap'); if(!el) return;
   const k=todayKey(), arr=exercises[k]||[];
-  const cnt=arr.length, v=arr.reduce((s,it)=>s+vol(it),0), sh=shakes[k]?'✓':'–';
+  const cnt=arr.length, v=Math.round(arr.reduce((s,it)=>s+vol(it),0)), sh=shakes[k]?'✓':'–';
   el.innerHTML='<div class="wsum">'
-    +'<div><div class="val">'+fmtNum(cnt)+'</div><div class="lbl">Exercises</div></div>'
-    +'<div><div class="val">'+fmtNum(v)+'</div><div class="lbl">kg Volume</div></div>'
+    +'<div><div class="val cu" data-to="'+cnt+'">'+fmtNum(cnt)+'</div><div class="lbl">Exercises</div></div>'
+    +'<div><div class="val cu" data-to="'+v+'">'+fmtNum(v)+'</div><div class="lbl">kg Volume</div></div>'
     +'<div><div class="val">'+sh+'</div><div class="lbl">Shake</div></div></div>';
+  if(animate){ animateCU(el); if(cnt>0||v>0) setTimeout(confetti,1500); }
 }
 function renderOnThisDay(){
   const el=document.getElementById('onThisDay'); if(!el) return;
@@ -1725,7 +1726,7 @@ document.getElementById('importFile').onchange=e=>{
   r.readAsText(f);
 };
 
-updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay();
+updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay(); renderSnapshot(true);
 
 /* service worker + auto-update */
 if('serviceWorker' in navigator){
