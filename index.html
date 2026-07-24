@@ -235,6 +235,13 @@
   .stat-tile .n{font-size:23px;font-weight:900;color:var(--neon2);text-shadow:var(--glow-cy);line-height:1}
   .stat-tile .n.txt{font-size:15px}
   .stat-tile.wide{grid-column:1 / -1}
+  .badges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .badge{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 4px;text-align:center;opacity:.4}
+  .badge.got{opacity:1;border-color:var(--neon)}
+  .badge .b-ic{font-size:26px;filter:grayscale(1)}
+  .badge.got .b-ic{filter:none}
+  .badge .b-nm{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-top:6px;line-height:1.2}
+  .badge.got .b-nm{color:var(--ink)}
   .stat-tile .l{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
   .stat-line{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
   .stat-line:last-child{border-bottom:none}
@@ -367,7 +374,10 @@
       <button id="backupX" class="banner-x" aria-label="dismiss">✕</button>
     </div>
 
-    <div class="card" style="margin-top:6px">
+    <h2 style="margin-top:6px">Today</h2>
+    <div class="card"><div id="todaySnap"></div></div>
+
+    <div class="card" style="margin-top:12px">
       <div class="shake" id="shakeBox">
         <div class="glass">🥤</div>
         <div class="label" id="shakeLabel">Not logged yet</div>
@@ -384,6 +394,9 @@
 
     <h2>Today's Exercises</h2>
     <div class="card"><ul id="exList"></ul></div>
+
+    <h2>On This Day</h2>
+    <div class="card"><div id="onThisDay"></div></div>
   </section>
 
   <!-- ADD -->
@@ -457,6 +470,7 @@
     <div class="dsec" data-sec="trend"><h2>Volume Trend</h2><div class="card"><div id="statTrend"></div></div></div>
     <div class="dsec" data-sec="heat"><h2>Year Heatmap</h2><div class="card"><div id="statHeat"></div></div></div>
     <div class="dsec" data-sec="miles"><h2>Milestones</h2><div class="card"><div id="statMilestones"></div></div></div>
+    <div class="dsec" data-sec="badges"><h2>Achievements</h2><div class="card"><div id="statBadges"></div></div></div>
     <div class="dsec" data-sec="recap"><h2>Recap</h2>
       <div class="row" style="gap:10px">
         <button id="recapMonth" class="ghost" style="flex:1">Month recap</button>
@@ -507,11 +521,12 @@
       <button id="exportBtn" class="ghost" style="flex:1">Export data</button>
       <button id="importBtn" class="ghost" style="flex:1">Import data</button>
     </div>
+    <button id="exportCsvBtn" class="ghost" style="width:100%;margin-top:10px">Export CSV</button>
     <input type="file" id="importFile" accept="application/json" hidden>
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.26.4</div>
+    <div class="ver-foot" id="verLabel">v1.27.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -577,7 +592,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.26.4';
+const APP_VERSION='1.27.0';
 
 /* storage */
 const DB={
@@ -610,7 +625,7 @@ let backupDays=DB.get('backupDays',7);       // days between backup reminders (0
 let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
 let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
-function defaultDash(){ return {week:1,month:1,year:1,muscle:1,trend:1,heat:1,miles:1,recap:1}; }
+function defaultDash(){ return {week:1,month:1,year:1,muscle:1,trend:1,heat:1,miles:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -733,6 +748,7 @@ function showView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   document.querySelector('main').scrollTop=0;
+  if(v==='today'){ renderSnapshot(); renderOnThisDay(); }
   if(v==='add') renderExercises();
   if(v==='weight') renderWeight();
   if(v==='log') renderLog();
@@ -750,7 +766,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['miles','🏆 Milestones'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['miles','🏆 Milestones'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -874,6 +890,7 @@ function renderShake(){
   while(shakes[todayKey(d)]){ s++; d.setDate(d.getDate()-1); }
   document.getElementById('shakeStreak').textContent = s>0 ? '🔥 '+s+'-day streak' : 'No streak yet';
   document.getElementById('shakeTitle').textContent = shakeTier(s);
+  renderSnapshot();
 }
 document.getElementById('shakeBtn').onclick=()=>{ const k=todayKey(); const on=!shakes[k]; if(on)shakes[k]=true;else delete shakes[k]; DB.set('shakes',shakes); renderShake(); buzz(12); if(on) beep(660,0.1); };
 
@@ -925,6 +942,23 @@ function renderExercises(){
   const d=logDate();
   const ah=document.getElementById('addHeading'); if(ah) ah.textContent = d===todayKey() ? "Today's Exercises" : prettyDate(d);
   renderList('addList', d);
+  renderSnapshot();
+}
+function renderSnapshot(){
+  const el=document.getElementById('todaySnap'); if(!el) return;
+  const k=todayKey(), arr=exercises[k]||[];
+  const cnt=arr.length, v=arr.reduce((s,it)=>s+vol(it),0), sh=shakes[k]?'✓':'–';
+  el.innerHTML='<div class="wsum">'
+    +'<div><div class="val">'+fmtNum(cnt)+'</div><div class="lbl">Exercises</div></div>'
+    +'<div><div class="val">'+fmtNum(v)+'</div><div class="lbl">kg Volume</div></div>'
+    +'<div><div class="val">'+sh+'</div><div class="lbl">Shake</div></div></div>';
+}
+function renderOnThisDay(){
+  const el=document.getElementById('onThisDay'); if(!el) return;
+  const d=new Date(); d.setDate(d.getDate()-7); const k=todayKey(d), arr=exercises[k]||[];
+  if(!arr.length){ el.innerHTML='<div class="empty">Nothing logged a week ago ('+prettyDate(k)+').</div>'; return; }
+  el.innerHTML='<div class="hint" style="margin:0 0 8px">'+prettyDate(k)+'</div>'+arr.map(it=>'<div class="weekrow"><span class="muted link">'+it.name+'</span><span class="kg">'+fmtEntry(it)+'</span></div>').join('');
+  el.querySelectorAll('.link').forEach((sp,i)=>sp.onclick=()=>openExerciseHistory(arr[i].name));
 }
 
 /* edit an entry */
@@ -1436,12 +1470,41 @@ function generateRecap(period){
 document.getElementById('recapMonth').onclick=()=>generateRecap('month');
 document.getElementById('recapYear').onclick=()=>generateRecap('year');
 
+const ACHIEVEMENTS=[
+  {icon:'🎯',name:'First rep',test:m=>m.workouts>=1},
+  {icon:'🔰',name:'5 workouts',test:m=>m.workouts>=5},
+  {icon:'💪',name:'25 workouts',test:m=>m.workouts>=25},
+  {icon:'💯',name:'100 workouts',test:m=>m.workouts>=100},
+  {icon:'🏋️',name:'100 kg lift',test:m=>m.heavy>=100},
+  {icon:'🦍',name:'150 kg lift',test:m=>m.heavy>=150},
+  {icon:'🏆',name:'10 PRs',test:m=>m.prs>=10},
+  {icon:'👑',name:'100.000 kg',test:m=>m.volume>=100000},
+  {icon:'🥤',name:'7-day shakes',test:m=>m.shakeStreak>=7},
+  {icon:'🔥',name:'30-day shakes',test:m=>m.shakeStreak>=30},
+  {icon:'📅',name:'4-week streak',test:m=>m.weeklyStreak>=4},
+  {icon:'🚴',name:'100 cardio min',test:m=>m.cardioMin>=100},
+  {icon:'🧭',name:'10 exercises',test:m=>m.exercises>=10},
+  {icon:'⚖️',name:'Hit goal weight',test:m=>m.hitGoal}
+];
+function computeMetrics(){
+  let volT=0,heavy=0,cardioMin=0,workouts=0; const names=new Set();
+  Object.keys(exercises).forEach(k=>{ const arr=exercises[k]; if(!arr||!arr.length) return; workouts++;
+    arr.forEach(it=>{ volT+=vol(it); if(it.weight!=null)heavy=Math.max(heavy,it.weight); if(it.mins!=null)cardioMin+=it.mins; names.add(norm(it.name)); }); });
+  const wk=Object.keys(weights).sort(); const hitGoal=wk.length? weights[wk[wk.length-1]]<=goal : false;
+  return {workouts, volume:volT, heavy, cardioMin, exercises:names.size, prs:totalPRs(), shakeStreak:longestShakeStreak(), weeklyStreak:longestWeeklyStreak(), hitGoal};
+}
+function renderAchievements(){
+  const box=document.getElementById('statBadges'); const m=computeMetrics();
+  box.innerHTML='<div class="badges">'+ACHIEVEMENTS.map(a=>{ const got=a.test(m);
+    return '<div class="badge'+(got?' got':'')+'"><div class="b-ic">'+a.icon+'</div><div class="b-nm">'+a.name+'</div></div>'; }).join('')+'</div>';
+}
 function renderStats(){
   applyDash();
   renderWeekSummary();
   renderVolumeTrend();
   renderMusclePie();
   renderHeatmap();
+  renderAchievements();
   let totVol=0,heaviest=0;
   Object.values(exercises).forEach(a=>a.forEach(it=>{ totVol+=vol(it);
     if(it.weight!=null) heaviest=Math.max(heaviest,it.weight); }));
@@ -1516,6 +1579,16 @@ function exportData(){
   DB.set('lastExport',Date.now()); updateBackupBanner(); showToast('Backup downloaded ✓');
 }
 document.getElementById('exportBtn').onclick=exportData;
+function exportCSV(){
+  const rows=[['date','exercise','group','weight_kg','sets','reps','distance_km','minutes']];
+  Object.keys(exercises).sort().forEach(k=>exercises[k].forEach(it=>{
+    rows.push([k, it.name, it.group||'', it.weight!=null?it.weight:'', it.sets!=null?it.sets:'', it.reps!=null?it.reps:'', it.dist!=null?it.dist:'', it.mins!=null?it.mins:'']);
+  }));
+  const csv=rows.map(r=>r.map(f=>{ f=String(f); return /[",\n]/.test(f)?'"'+f.replace(/"/g,'""')+'"':f; }).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='gymbro-export-'+todayKey()+'.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showToast('CSV exported ✓');
+}
+document.getElementById('exportCsvBtn').onclick=exportCSV;
 
 /* weekly backup reminder */
 function daysSince(ts){ return ts ? (Date.now()-ts)/86400000 : Infinity; }
@@ -1559,7 +1632,7 @@ document.getElementById('importFile').onchange=e=>{
   r.readAsText(f);
 };
 
-updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner();
+updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay();
 
 /* service worker + auto-update */
 if('serviceWorker' in navigator){
