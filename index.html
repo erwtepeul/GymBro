@@ -243,6 +243,14 @@
   .badge.got .b-ic{filter:none}
   .badge .b-nm{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-top:6px;line-height:1.2}
   .badge.got .b-nm{color:var(--ink)}
+  #statBody svg{width:100%;height:auto;display:block}
+  #statBody [data-group]{cursor:pointer;transition:fill-opacity .2s}
+  #statBody [data-group]:active{fill-opacity:1}
+  .bm-base{fill:var(--bg2);stroke:var(--line);stroke-width:1.5}
+  .bm-lbl{fill:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+  .insight{font-size:14px;font-weight:600;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+  .insight:last-child{border-bottom:none}
+  .insight b{color:var(--neon2)}
   .stat-tile .l{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
   .stat-line{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
   .stat-line:last-child{border-bottom:none}
@@ -393,6 +401,9 @@
     <h2>Weekly Goal</h2>
     <div class="card"><div class="goalw" id="goalwBox"></div></div>
 
+    <h2>Suggested Session</h2>
+    <div class="card"><div id="suggestBox"></div></div>
+
     <h2>On This Day</h2>
     <div class="card"><div id="onThisDay"></div></div>
 
@@ -467,7 +478,9 @@
     <div class="dsec" data-sec="week"><h2>This Week</h2><div class="card"><div id="statSummary"></div></div></div>
     <div class="dsec" data-sec="month"><h2>This Month</h2><div class="card"><div id="statMonth"></div></div></div>
     <div class="dsec" data-sec="year"><h2>This Year</h2><div class="card"><div id="statYear"></div></div></div>
+    <div class="dsec" data-sec="body"><h2>Body Map</h2><div class="card"><div id="statBody"></div></div></div>
     <div class="dsec" data-sec="muscle"><h2>Muscle Balance</h2><div class="card"><div id="statPie"></div></div></div>
+    <div class="dsec" data-sec="insights"><h2>Insights</h2><div class="card"><div id="statInsights"></div></div></div>
     <div class="dsec" data-sec="trend"><h2>Volume Trend</h2><div class="card"><div id="statTrend"></div></div></div>
     <div class="dsec" data-sec="heat"><h2>Year Heatmap</h2><div class="card"><div id="statHeat"></div></div></div>
     <div class="dsec" data-sec="badges"><h2>Achievements</h2><div class="card"><div id="statBadges"></div></div></div>
@@ -526,7 +539,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.28.1</div>
+    <div class="ver-foot" id="verLabel">v1.29.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -592,7 +605,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.28.1';
+const APP_VERSION='1.29.0';
 
 /* storage */
 const DB={
@@ -625,7 +638,7 @@ let backupDays=DB.get('backupDays',7);       // days between backup reminders (0
 let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
 let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
-function defaultDash(){ return {week:1,month:1,year:1,muscle:1,trend:1,heat:1,badges:1,recap:1}; }
+function defaultDash(){ return {week:1,month:1,year:1,body:1,muscle:1,insights:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -723,6 +736,18 @@ function buzz(p){ if(haptics && navigator.vibrate){ try{ navigator.vibrate(p); }
 let _ac;
 function beep(freq,dur){ if(!sound) return; try{ _ac=_ac||new (window.AudioContext||window.webkitAudioContext)(); const o=_ac.createOscillator(),g=_ac.createGain(); o.type='sine'; o.frequency.value=freq||660; o.connect(g); g.connect(_ac.destination); const t=_ac.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.14,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.12)); o.start(t); o.stop(t+(dur||0.13)); }catch(e){} }
 function flash(){ if(reduceGlow) return; const f=document.getElementById('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
+function confetti(){
+  if(reduceGlow) return;
+  const cs=getComputedStyle(document.documentElement);
+  const cols=[cs.getPropertyValue('--neon').trim()||'#39ff14', cs.getPropertyValue('--neon2').trim()||'#00f0ff', '#ffffff'];
+  const cv=document.createElement('canvas'); cv.style.cssText='position:fixed;inset:0;z-index:90;pointer-events:none';
+  cv.width=innerWidth; cv.height=innerHeight; document.body.appendChild(cv); const g=cv.getContext('2d');
+  const P=[]; for(let i=0;i<100;i++){ P.push({x:cv.width/2+(Math.random()-.5)*140, y:cv.height*0.34, vx:(Math.random()-.5)*11, vy:Math.random()*-13-4, r:4+Math.random()*5, c:cols[i%cols.length], rot:Math.random()*6, vr:(Math.random()-.5)*.5}); }
+  const start=performance.now();
+  (function step(now){ const t=now-start; g.clearRect(0,0,cv.width,cv.height);
+    P.forEach(p=>{ p.vy+=0.38; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; g.save(); g.translate(p.x,p.y); g.rotate(p.rot); g.globalAlpha=Math.max(0,1-t/1700); g.fillStyle=p.c; g.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6); g.restore(); });
+    if(t<1700) requestAnimationFrame(step); else cv.remove(); })(start);
+}
 function countUp(el,to,fmt){ const dur=1400,s=performance.now(); (function step(now){ const p=Math.min(1,(now-s)/dur); el.textContent=fmt(Math.round(to*(1-Math.pow(1-p,3)))); if(p<1) requestAnimationFrame(step); })(performance.now()); }
 function animateCU(box){ box.querySelectorAll('.cu').forEach(el=>countUp(el,+el.dataset.to,fmtNum)); }
 
@@ -748,7 +773,7 @@ function showView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   document.querySelector('main').scrollTop=0;
-  if(v==='today'){ renderSnapshot(); renderOnThisDay(); }
+  if(v==='today'){ renderSnapshot(); renderOnThisDay(); renderSuggest(); }
   if(v==='add') renderExercises();
   if(v==='weight') renderWeight();
   if(v==='log') renderLog();
@@ -766,7 +791,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['body','🧍 Body map'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -1076,7 +1101,7 @@ document.getElementById('exAdd').onclick=()=>{
   (exercises[k]=exercises[k]||[]).push({name,weight,sets,reps,group,dist,mins});
   DB.set('exercises',exercises);
   buzz(12);
-  if(weight!=null && prevBest!=null && weight>prevBest){ showToast('🏆 New PR — '+name+' '+weight+' kg'); buzz([12,45,12]); beep(880,0.16); flash(); }
+  if(weight!=null && prevBest!=null && weight>prevBest){ showToast('🏆 New PR — '+name+' '+weight+' kg'); buzz([12,45,12]); beep(880,0.16); flash(); confetti(); }
   exNameEl.value=''; exWeightEl.value=''; exSetsEl.value=''; exRepsEl.value=''; exDistEl.value=''; exMinsEl.value=''; exGroupEl.value=''; updateExFields(); exNameEl.focus();
   updateExNames(); renderExercises(); renderWeeklyGoal();
 };
@@ -1511,11 +1536,96 @@ function renderAchievements(){
   box.innerHTML='<div class="badges">'+ACHIEVEMENTS.map(a=>{ const got=a.test(m);
     return '<div class="badge'+(got?' got':'')+'"><div class="b-ic">'+a.icon+'</div><div class="b-nm">'+a.name+'</div></div>'; }).join('')+'</div>';
 }
+function openGroupDetail(group){
+  document.getElementById('exModalTitle').textContent=group;
+  const map={}; Object.values(exercises).forEach(a=>a.forEach(it=>{ if(it.group===group){ const n=it.name; if(!map[n])map[n]={v:0,c:0}; map[n].v+=vol(it); map[n].c++; } }));
+  const names=Object.keys(map).sort((a,b)=>map[b].v-map[a].v);
+  const body=document.getElementById('exModalBody');
+  if(!names.length) body.innerHTML='<div class="empty">No '+group+' exercises logged.</div>';
+  else body.innerHTML=names.map(n=>'<div class="weekrow"><span class="muted link">'+n+'</span><span class="kg">'+fmtNum(map[n].v)+' kg · '+map[n].c+'×</span></div>').join('');
+  body.querySelectorAll('.link').forEach((sp,i)=>sp.onclick=()=>openExerciseHistory(names[i]));
+  document.getElementById('exModal').hidden=false;
+}
+function renderBodyMap(){
+  const box=document.getElementById('statBody'); if(!box) return;
+  const ym=todayKey().slice(0,7); const gv={}; GROUPS.forEach(g=>gv[g]=0);
+  Object.keys(exercises).forEach(k=>{ if(k.slice(0,7)!==ym) return; exercises[k].forEach(it=>{ if(it.group!=null) gv[it.group]=(gv[it.group]||0)+vol(it); }); });
+  const vals=Object.values(gv).filter(v=>v>0); const max=vals.length?Math.max(...vals):1;
+  const COL=theme==='night'?GROUP_GREYS:GROUP_COLORS;
+  const reg=(g,shape)=>{ const has=gv[g]>0; const base=COL[g]||'#888'; const fill=has?base:'var(--bg2)'; const op=has?(0.3+0.7*Math.min(1,gv[g]/max)):1;
+    return shape.replace(/@@/g,'fill="'+fill+'" fill-opacity="'+op+'" stroke="var(--line)" stroke-width="1" data-group="'+g+'"'); };
+  const svg='<svg viewBox="0 0 300 290">'
+    +'<circle class="bm-base" cx="80" cy="34" r="16"/>'
+    +reg('Shoulders','<ellipse cx="63" cy="60" rx="12" ry="9" @@/><ellipse cx="97" cy="60" rx="12" ry="9" @@/>')
+    +reg('Arms','<rect x="47" y="60" width="13" height="46" rx="6" @@/><rect x="100" y="60" width="13" height="46" rx="6" @@/>')
+    +reg('Chest','<rect x="66" y="56" width="28" height="20" rx="7" @@/>')
+    +reg('Core','<rect x="68" y="78" width="24" height="30" rx="6" @@/>')
+    +reg('Legs','<rect x="66" y="110" width="13" height="80" rx="6" @@/><rect x="81" y="110" width="13" height="80" rx="6" @@/>')
+    +'<text class="bm-lbl" x="80" y="208" text-anchor="middle">Front</text>'
+    +'<circle class="bm-base" cx="220" cy="34" r="16"/>'
+    +'<rect class="bm-base" x="187" y="60" width="13" height="46" rx="6"/><rect class="bm-base" x="240" y="60" width="13" height="46" rx="6"/>'
+    +'<rect class="bm-base" x="206" y="110" width="13" height="80" rx="6"/><rect class="bm-base" x="221" y="110" width="13" height="80" rx="6"/>'
+    +reg('Back','<rect x="203" y="56" width="34" height="52" rx="8" @@/>')
+    +'<text class="bm-lbl" x="220" y="208" text-anchor="middle">Back</text>'
+    +reg('Cardio','<path d="M150 244 C 143 236, 131 241, 137 251 C 140 256, 150 262, 150 262 C 150 262, 160 256, 163 251 C 169 241, 157 236, 150 244 Z" @@/>')
+    +'<text class="bm-lbl" x="150" y="278" text-anchor="middle">Cardio</text>'
+    +'</svg>';
+  box.innerHTML=svg+'<div class="hint" style="text-align:center;margin-top:8px">This month · tap a muscle</div>';
+  box.querySelectorAll('[data-group]').forEach(el=>el.onclick=()=>openGroupDetail(el.getAttribute('data-group')));
+}
+function renderInsights(){
+  const box=document.getElementById('statInsights'); if(!box) return; const out=[];
+  const ym=todayKey().slice(0,7); const gv={};
+  Object.keys(exercises).forEach(k=>{ if(k.slice(0,7)!==ym) return; exercises[k].forEach(it=>{ if(it.group) gv[it.group]=(gv[it.group]||0)+vol(it); }); });
+  const gs=Object.keys(gv).sort((a,b)=>gv[b]-gv[a]);
+  if(gs.length) out.push('💪 Most-trained this month: <b>'+gs[0]+'</b>.');
+  const missing=GROUPS.filter(g=>!gv[g]);
+  if(missing.length) out.push('⚠️ Skipped this month: <b>'+missing.slice(0,3).join(', ')+'</b>.');
+  const mon=mondayOf(), sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const lm=new Date(mon); lm.setDate(mon.getDate()-7); const ls=new Date(lm); ls.setDate(lm.getDate()+6);
+  const volIn=(a,b)=>{ let v=0; Object.keys(exercises).forEach(k=>{ if(k>=a&&k<=b) v+=exercises[k].reduce((s,it)=>s+vol(it),0); }); return v; };
+  const tw=volIn(todayKey(mon),todayKey(sun)), lw=volIn(todayKey(lm),todayKey(ls));
+  if(lw>0){ const pct=Math.round((tw-lw)/lw*100); out.push((pct>=0?'📈':'📉')+' Volume '+(pct>=0?'up':'down')+' <b>'+Math.abs(pct)+'%</b> vs last week.'); }
+  const wd=[0,0,0,0,0,0,0]; Object.keys(exercises).forEach(k=>{ if(exercises[k]&&exercises[k].length){ const d=new Date(k+'T00:00:00'); wd[(d.getDay()+6)%7]++; } });
+  const wn=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; let bi=0; for(let i=1;i<7;i++) if(wd[i]>wd[bi])bi=i;
+  if(wd[bi]>0) out.push('📅 Your go-to day is <b>'+wn[bi]+'</b>.');
+  let bestName=null,bestSlope=0; const byName={};
+  Object.keys(exercises).sort().forEach(k=>{ const t=new Date(k+'T00:00:00').getTime()/(1000*60*60*24*7); exercises[k].forEach(it=>{ if(it.weight==null) return; (byName[it.name]=byName[it.name]||[]).push([t,it.weight]); }); });
+  Object.keys(byName).forEach(n=>{ const pts=byName[n]; if(pts.length<3) return; let sx=0,sy=0,sxy=0,sxx=0,N=pts.length; pts.forEach(p=>{ sx+=p[0]; sy+=p[1]; sxy+=p[0]*p[1]; sxx+=p[0]*p[0]; }); const den=N*sxx-sx*sx; if(!den) return; const sl=(N*sxy-sx*sy)/den; if(sl>bestSlope){ bestSlope=sl; bestName=n; } });
+  if(bestName && bestSlope>0.05) out.push('🚀 Fastest gainer: <b>'+bestName+'</b> ~'+fmtDec(bestSlope)+' kg/week.');
+  let sc=0; for(let i=0;i<30;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(shakes[todayKey(d)]) sc++; }
+  out.push('🥤 Shakes: <b>'+Math.round(sc/30*100)+'%</b> of the last 30 days.');
+  box.innerHTML= out.length? out.map(s=>'<div class="insight">'+s+'</div>').join('') : '<div class="empty">Log more to unlock insights.</div>';
+}
+function renderSuggest(){
+  const box=document.getElementById('suggestBox'); if(!box) return;
+  const trained=GROUPS.filter(g=>Object.values(exercises).some(a=>a.some(it=>it.group===g)));
+  if(!trained.length){ box.innerHTML='<div class="empty">Log a few workouts and I\'ll suggest a session.</div>'; return; }
+  const mon=mondayOf(); const counts={}; trained.forEach(g=>counts[g]=0);
+  for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); (exercises[todayKey(d)]||[]).forEach(it=>{ if(counts[it.group]!=null) counts[it.group]++; }); }
+  trained.sort((a,b)=>counts[a]-counts[b]); const group=trained[0];
+  const freq={}; Object.values(exercises).forEach(a=>a.forEach(it=>{ if(it.group===group) freq[it.name]=(freq[it.name]||0)+1; }));
+  const picks=Object.keys(freq).sort((a,b)=>freq[b]-freq[a]).slice(0,4);
+  const sugg=picks.map(n=>{ const last=lastEntryFor(n); const cardio=group==='Cardio';
+    return {name:n,group,weight:(!cardio&&last&&last.weight!=null)?+(last.weight+2.5).toFixed(1):null,
+      sets:cardio?null:((last&&last.sets)||3), reps:cardio?null:((last&&last.reps)||8),
+      dist:cardio?((last&&last.dist)||5):null, mins:cardio?((last&&last.mins)||30):null}; });
+  box.innerHTML='<div class="hint" style="margin:0 0 10px">Focus: <b style="color:var(--neon2)">'+group+'</b> · least trained this week</div>'
+    +sugg.map(s=>'<div class="weekrow"><span class="muted">'+s.name+'</span><span class="kg">'+(s.weight!=null?fmtDec(s.weight)+' kg · '+s.sets+'×'+s.reps:(s.mins?s.mins+' min':'—'))+'</span></div>').join('')
+    +'<button id="suggAdd" class="ghost" style="width:100%;margin-top:12px">Add to today</button>';
+  document.getElementById('suggAdd').onclick=()=>{
+    const k=todayKey(); exercises[k]=exercises[k]||[];
+    sugg.forEach(s=>exercises[k].push({name:s.name,group:s.group,weight:s.weight,sets:s.sets,reps:s.reps,dist:s.dist,mins:s.mins}));
+    DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); renderSuggest(); buzz(15); showToast('Session added ✓');
+  };
+}
 function renderStats(){
   applyDash();
   renderWeekSummary();
+  renderBodyMap();
   renderVolumeTrend();
   renderMusclePie();
+  renderInsights();
   renderHeatmap();
   renderAchievements();
 }
@@ -1620,7 +1730,7 @@ document.getElementById('importFile').onchange=e=>{
   r.readAsText(f);
 };
 
-updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay();
+updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay(); renderSuggest();
 
 /* service worker + auto-update */
 if('serviceWorker' in navigator){
