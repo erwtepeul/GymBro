@@ -564,7 +564,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.38.0</div>
+    <div class="ver-foot" id="verLabel">v1.38.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -630,7 +630,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.38.0';
+const APP_VERSION='1.38.1';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1837,6 +1837,7 @@ document.getElementById('exportCsvBtn').onclick=exportCSV;
 
 /* ---------- Backup hardening: persistent storage + auto-backup to a file ---------- */
 const FS_SUPPORTED = ('showSaveFilePicker' in window);
+function isInstalled(){ try{ return window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || window.navigator.standalone===true; }catch(e){ return false; } }
 let autoHandle=null;      // File System Access handle (in memory)
 let autoNeedsAuth=false;  // handle exists but permission not yet granted this session
 
@@ -1877,10 +1878,12 @@ async function renderBackupStatus(){
   const setA=document.getElementById('setAuto'), btn=document.getElementById('autoBackupBtn');
   const last=Math.max(DB.get('lastExport',0)||0, DB.get('lastAuto',0)||0);
   let persisted=false; try{ persisted=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted():false; }catch(e){}
+  const installed = isInstalled();
   // auto-backup control label
   if(setA&&btn){
+    btn.disabled=false; btn.style.opacity='';
     if(!FS_SUPPORTED){ setA.textContent='Unsupported'; btn.textContent='—'; btn.disabled=true; btn.style.opacity=.5; }
-    else if(autoHandle&&autoNeedsAuth){ setA.textContent='Needs access'; btn.textContent='Re-authorize'; btn.onclick=()=>writeAutoBackup(true); }
+    else if(autoHandle&&autoNeedsAuth){ setA.textContent='Tap to resume'; btn.textContent='Resume'; btn.onclick=()=>writeAutoBackup(true); }
     else if(autoHandle){ setA.textContent='On'; btn.textContent='Turn off'; btn.onclick=disableAutoBackup; }
     else { setA.textContent='Off'; btn.textContent='Enable'; btn.onclick=enableAutoBackup; }
   }
@@ -1888,7 +1891,10 @@ async function renderBackupStatus(){
   const protectedOk = persisted && (autoHandle && !autoNeedsAuth);
   let ico,cls,head,sub;
   if(protectedOk){ ico='🛡️'; cls='ok'; head='Your data is protected.'; sub='Auto-backup on · storage persisted · last backup '+fmtAgo(last)+'.'; }
-  else if(autoHandle&&autoNeedsAuth){ ico='🔓'; cls='warn'; head='Auto-backup needs access.'; sub='Tap “Re-authorize” to let GymBro write your backup file again.'; }
+  else if(autoHandle&&autoNeedsAuth){ ico='🔓'; cls='warn'; head='Tap “Resume” to continue auto-backup.';
+    sub = installed
+      ? 'Your last backup was '+fmtAgo(last)+'. This should only ask once — tap Resume.'
+      : 'For security, browsers re-ask each launch. To stop the repeated prompts, install GymBro to your home screen (browser menu → “Add to Home Screen” / “Install”) — then permission sticks. Last backup '+fmtAgo(last)+'.'; }
   else { ico='⚠️'; cls='warn'; head='Your data lives only on this device.'; sub='Clearing this browser, deleting the app, or storage cleanup will erase everything. '+(FS_SUPPORTED?'Turn on Auto-backup':'Export a backup file regularly')+' — last backup '+fmtAgo(last)+'.'; }
   box.className='bk-status '+cls;
   box.innerHTML='<span class="bk-ico">'+ico+'</span><span><span>'+head+'</span><div class="bk-sub">'+sub+'</div></span>';
