@@ -156,6 +156,9 @@
   .weekrow:last-child{border-bottom:none}
   .weekrow .wk{font-weight:700}
   .weekrow .kg{font-weight:900;color:var(--neon)}
+  .weekrow .wedit{background:none;border:none;box-shadow:none;padding:0 8px 0 0;margin:0;
+    font-size:13px;line-height:1;cursor:pointer;opacity:.75;filter:grayscale(.2)}
+  .weekrow .wedit:active{opacity:1;transform:scale(.9)}
   .weekrow .muted{color:var(--muted);font-weight:600}
   .delta{font-size:12px;font-weight:800;margin-left:8px}
   .delta.up{color:var(--neon2)}.delta.down{color:var(--danger)}.delta.even{color:var(--muted)}
@@ -565,7 +568,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.39.2</div>
+    <div class="ver-foot" id="verLabel">v1.40.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -631,7 +634,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.39.2';
+const APP_VERSION='1.40.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1397,9 +1400,18 @@ function renderWeight(){
       else delta='<span class="delta '+(dv>0?'up':'down')+'">'+(dv>0?'+':'')+fmtDec(dv)+'</span>'; }
     else delta='<span class="delta even">±0,0</span>';
     const row=document.createElement('div'); row.className='weekrow';
-    row.innerHTML='<span class="wk">'+prettyDate(k)+'</span><span class="kg">'+fmtDec(weights[k])+' kg'+delta+'</span>';
+    row.innerHTML='<span class="wk">'+prettyDate(k)+'</span><span class="kg"><button class="wedit" data-k="'+k+'" aria-label="Edit">✏️</button>'+fmtDec(weights[k])+' kg'+delta+'</span>';
     hist.appendChild(row);
   });
+  hist.querySelectorAll('.wedit').forEach(b=>b.onclick=()=>editWeight(b.dataset.k));
+}
+function editWeight(k){
+  const v=prompt('Edit weight for '+prettyDate(k)+' (kg) — leave empty to delete:', weights[k]);
+  if(v==null) return;
+  if(v.trim()===''){ if(confirm('Delete this weigh-in?')){ delete weights[k]; DB.set('weights',weights); renderWeight(); showToast('Weigh-in deleted'); } return; }
+  const n=parseFloat(v.replace(',','.'));
+  if(isNaN(n)||n<=0){ alert('Enter a valid number.'); return; }
+  weights[k]=n; DB.set('weights',weights); renderWeight(); showToast('Weight updated ✓');
 }
 document.getElementById('weightSave').onclick=()=>{ const v=document.getElementById('weightInput').value; if(v==='')return; weights[mondayKey()]=parseFloat(v); DB.set('weights',weights); renderWeight(); showToast('Weight saved ✓'); };
 document.getElementById('goalEdit').onclick=()=>{
