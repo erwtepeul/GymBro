@@ -300,7 +300,7 @@
   .momo-bar{height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin:8px 0 7px}
   .momo-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#ff8a3d,#ffcf33)}
   .momo-parts{font-size:11px;font-weight:700;color:var(--muted)}
-  .ghost-row{font-size:14px;font-weight:800;margin-top:14px;text-align:center}
+  .ghost-row{font-size:11px;font-weight:700;margin-top:5px;text-align:left}
   .bk-status{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;font-weight:700;
     line-height:1.4;padding:11px 12px;border-radius:12px;margin-bottom:12px}
   .bk-status.ok{background:rgba(57,255,20,.08);color:var(--ink);border:1px solid var(--line)}
@@ -565,7 +565,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.39.1</div>
+    <div class="ver-foot" id="verLabel">v1.39.2</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -631,7 +631,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.39.1';
+const APP_VERSION='1.39.2';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1143,8 +1143,8 @@ function renderMomentum(){
   box.innerHTML='<div class="momo"><div class="momo-score"><b>'+M.score+'</b><span>/ 100</span></div>'
     +'<div class="momo-meta"><div class="momo-lvl">'+emo+' '+lvl+'</div>'
     +'<div class="momo-bar"><i style="width:'+M.score+'%"></i></div>'
-    +'<div class="momo-parts">Consistency '+Math.round(M.cons*100)+'% · Trend '+Math.round(M.tr*100)+'% · Streak '+Math.round(M.strk*100)+'%</div></div></div>'
-    +'<div class="ghost-row">'+ghostTxt+'</div>'
+    +'<div class="momo-parts">Consistency '+Math.round(M.cons*100)+'% · Trend '+Math.round(M.tr*100)+'% · Streak '+Math.round(M.strk*100)+'%</div>'
+    +'<div class="ghost-row">'+ghostTxt+'</div></div></div>'
     +ghostSpark(cur,gh);
 }
 let goalMetric=DB.get('goalMetric',0); const GOAL_METRICS=['workouts','volume','shakes'];
