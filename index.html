@@ -44,11 +44,11 @@
     --glow-cy:0 0 12px rgba(45,212,191,.5), 0 0 26px rgba(45,212,191,.2);
     --ga:rgba(14,165,233,.12); --gb:rgba(45,212,191,.08); --focus:rgba(14,165,233,.15);
   }
-  html[data-theme="gold"]{
-    --neon:#ffcf33; --neon2:#ff8a3d;
-    --glow:0 0 12px rgba(255,207,51,.55), 0 0 26px rgba(255,207,51,.25);
-    --glow-cy:0 0 12px rgba(255,138,61,.5), 0 0 26px rgba(255,138,61,.2);
-    --ga:rgba(255,207,51,.12); --gb:rgba(255,138,61,.08); --focus:rgba(255,207,51,.15);
+  html[data-theme="mint"]{
+    --neon:#3ef0a0; --neon2:#5ad1ff;
+    --glow:0 0 12px rgba(62,240,160,.55), 0 0 26px rgba(62,240,160,.25);
+    --glow-cy:0 0 12px rgba(90,209,255,.5), 0 0 26px rgba(90,209,255,.2);
+    --ga:rgba(62,240,160,.12); --gb:rgba(90,209,255,.08); --focus:rgba(62,240,160,.15);
   }
   html[data-theme="aurora"]{
     --neon:#2dd4bf; --neon2:#a78bfa;
@@ -540,7 +540,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.35.2</div>
+    <div class="ver-foot" id="verLabel">v1.35.3</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -606,7 +606,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.35.2';
+const APP_VERSION='1.35.3';
 
 /* storage */
 const DB={
@@ -648,7 +648,7 @@ let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 /* theme */
-const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'gold',name:'Gold',a:'#ffcf33',b:'#ff8a3d'},{id:'aurora',name:'Aurora',a:'#2dd4bf',b:'#a78bfa'},{id:'lime',name:'Lime',a:'#b6ff3d',b:'#00e6c3'}];
+const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'aurora',name:'Aurora',a:'#2dd4bf',b:'#a78bfa'},{id:'lime',name:'Lime',a:'#b6ff3d',b:'#00e6c3'},{id:'mint',name:'Mint',a:'#3ef0a0',b:'#5ad1ff'}];
 if(!THEMES.some(t=>t.id===theme)){ theme='neon'; DB.set('theme',theme); }
 function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
 applyTheme();
