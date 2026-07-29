@@ -555,6 +555,7 @@
       <div class="set-row"><span>💾 Auto-backup</span><span class="val"><b id="setAuto">Off</b><button id="autoBackupBtn" class="ghost">Enable</button></span></div>
       <div class="set-row"><span>⏰ Reminder</span><span class="val"><b id="setBackup">7 days</b><button id="backupEdit" class="ghost">Change</button></span></div>
     </div>
+    <button id="shareBackupBtn" class="ghost" style="width:100%;margin-bottom:10px;display:none">📤 Back up to… (Drive, Files, email)</button>
     <div class="row" style="gap:10px">
       <button id="exportBtn" class="ghost" style="flex:1">Export data</button>
       <button id="importBtn" class="ghost" style="flex:1">Import data</button>
@@ -564,7 +565,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.38.2</div>
+    <div class="ver-foot" id="verLabel">v1.39.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -630,7 +631,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.38.2';
+const APP_VERSION='1.39.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1834,6 +1835,21 @@ function exportCSV(){
   a.href=url; a.download='gymbro-export-'+todayKey()+'.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showToast('CSV exported ✓');
 }
 document.getElementById('exportCsvBtn').onclick=exportCSV;
+
+/* Share backup to the native share sheet (Drive/Files/email) — great on mobile, no recurring prompts */
+function backupFile(){ return new File([backupPayload()], 'gymbro-backup-'+todayKey()+'.json', {type:'application/json'}); }
+async function shareBackup(){
+  try{
+    const file=backupFile();
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({ files:[file], title:'GymBro backup', text:'GymBro backup '+todayKey() });
+      DB.set('lastExport',Date.now()); updateBackupBanner(); renderBackupStatus(); showToast('Backup shared ✓');
+    } else { exportData(); } // fall back to a normal download
+  }catch(e){ /* user cancelled the share sheet */ }
+}
+(function(){ const b=document.getElementById('shareBackupBtn');
+  if(b && navigator.canShare){ try{ if(navigator.canShare({files:[new File(['{}'],'t.json',{type:'application/json'})]})){ b.style.display=''; b.onclick=shareBackup; } }catch(e){} }
+})();
 
 /* ---------- Backup hardening: persistent storage + auto-backup to a file ---------- */
 const FS_SUPPORTED = ('showSaveFilePicker' in window);
