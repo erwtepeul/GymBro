@@ -120,7 +120,7 @@
   button:active{transform:scale(.97)}
   button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none;text-transform:none;letter-spacing:0}
 
-  .big-num{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--neon);text-shadow:var(--glow)}
+  .big-num{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--neon2);text-shadow:var(--glow-cy)}
   .unit{font-size:16px;color:var(--muted);font-weight:700}
   .hint{font-size:12px;color:var(--muted);margin-top:8px;font-weight:600}
 
@@ -226,6 +226,7 @@
   .wsum{display:flex;justify-content:space-around;text-align:center;gap:8px}
   .wsum .val{font-size:32px;font-weight:900;color:var(--neon);text-shadow:var(--glow);line-height:1}
   #todaySnap .val{color:var(--neon2);text-shadow:var(--glow-cy)}
+  #statSummary .val,#statMonth .val,#statYear .val{color:var(--neon2);text-shadow:var(--glow-cy)}
   .wsum .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:8px}
 
   /* stats page */
@@ -568,7 +569,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.40.1</div>
+    <div class="ver-foot" id="verLabel">v1.40.2</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -634,7 +635,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.40.1';
+const APP_VERSION='1.40.2';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
