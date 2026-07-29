@@ -199,8 +199,10 @@
   .cal-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
     width:4px;height:4px;border-radius:50%;background:var(--neon2);box-shadow:0 0 4px var(--neon2)}
   .cal-cell.done{border-color:#ffb020;color:#ffb020;box-shadow:0 0 8px rgba(255,176,32,.45),0 0 18px rgba(255,176,32,.2)}
+  .cal-cell.kb{border-color:#b46bff;color:#b46bff;box-shadow:0 0 8px rgba(180,107,255,.5),0 0 18px rgba(180,107,255,.22)}
   .cal-cell.today{color:var(--neon2)}
   .cal-cell.today.done{color:#ffb020}
+  .cal-cell.today.kb{color:#b46bff}
   .cal-cell[data-k]{cursor:pointer}
 
   .danger-btn{margin-top:22px;width:100%;background:transparent;color:var(--danger);
@@ -293,6 +295,8 @@
   .goalw-count b{color:var(--neon2)}
   .goalw-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:2px}
   .goalw-streak{font-size:12px;font-weight:800;color:var(--neon2);margin-top:6px;text-transform:uppercase;letter-spacing:1px}
+  html[data-theme="night"] .goalw-count b{color:#00f0ff}
+  html[data-theme="night"] .goalw-streak{color:#00f0ff}
   .goalw-info{display:flex;flex-direction:column;justify-content:center}
   .goalw .ghost{padding:8px 14px;font-size:13px;flex:0 0 auto}
   .momo{display:flex;align-items:center;gap:16px}
@@ -502,7 +506,6 @@
     <div class="dsec" data-sec="week"><h2>This Week</h2><div class="card"><div id="statSummary"></div></div></div>
     <div class="dsec" data-sec="month"><h2>This Month</h2><div class="card"><div id="statMonth"></div></div></div>
     <div class="dsec" data-sec="year"><h2>This Year</h2><div class="card"><div id="statYear"></div></div></div>
-    <div class="dsec" data-sec="kb"><h2>Kettlebell Days</h2><div class="card"><div id="statKettle"></div></div></div>
     <div class="dsec" data-sec="muscle"><h2>Muscle Balance</h2><div class="card"><div id="statPie"></div></div></div>
     <div class="dsec" data-sec="insights"><h2>Insights</h2><div class="card"><div id="statInsights"></div></div></div>
     <div class="dsec" data-sec="proj"><h2>Projections</h2><div class="card"><div id="statProj"></div></div></div>
@@ -571,7 +574,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.42.0</div>
+    <div class="ver-foot" id="verLabel">v1.43.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -637,7 +640,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.42.0';
+const APP_VERSION='1.43.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -676,7 +679,7 @@ let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
 let reminders=DB.get('reminders',false);     // opt-in reminder notifications
 let showTodayEx=DB.get('showTodayEx',true);  // show Today's Exercises on home
 function applyHomeToggles(){ const el=document.getElementById('homeTodayEx'); if(el) el.style.display=showTodayEx?'':'none'; }
-function defaultDash(){ return {week:1,month:1,year:1,kb:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
+function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -828,9 +831,9 @@ function renderThemes(){
   const box=document.getElementById('themePicker');
   box.innerHTML=THEMES.map(t=>'<button class="theme-opt'+(t.id===theme?' active':'')+'" data-set="'+t.id+'">'
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
-  box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
+  box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); renderWeeklyGoal(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['kb','🏋️ Kettlebell days'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -1163,10 +1166,14 @@ function renderWeeklyGoal(){
   else { done=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); if(shakes[todayKey(d)]) done++; } target=7; center=done; sub='shakes this week'; }
   const pct=Math.max(0,Math.min(1, target>0?done/target:0));
   const r=28, c=2*Math.PI*r, off=c*(1-pct);
-  const ring='<svg class="ring" viewBox="0 0 72 72">'
+  const mono = theme==='night';
+  const grad = mono ? '<defs><linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#39ff14"/><stop offset=".5" stop-color="#00f0ff"/><stop offset="1" stop-color="#b46bff"/></linearGradient></defs>' : '';
+  const rfgStyle = mono ? ' style="stroke:url(#goalGrad);filter:drop-shadow(0 0 4px rgba(0,240,255,.6))"' : '';
+  const rtxtStyle = mono ? ' style="fill:#00f0ff"' : '';
+  const ring='<svg class="ring" viewBox="0 0 72 72">'+grad
     +'<circle class="rbg" cx="36" cy="36" r="'+r+'"/>'
-    +'<circle class="rfg" cx="36" cy="36" r="'+r+'" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'
-    +'<text class="rtxt" x="36" y="43" text-anchor="middle">'+(m==='volume'?'':done)+'</text></svg>';
+    +'<circle class="rfg" cx="36" cy="36" r="'+r+'"'+rfgStyle+' stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'
+    +'<text class="rtxt" x="36" y="43" text-anchor="middle"'+rtxtStyle+'>'+(m==='volume'?'':done)+'</text></svg>';
   const info='<div class="goalw-info"><div class="goalw-count"><b>'+center+'</b> / '+fmtNum(target)+'</div>'
     +'<div class="goalw-sub">'+sub+'</div>'
     +'<div class="goalw-streak">'+(streakLine||'tap to switch')+'</div></div>';
@@ -1387,8 +1394,9 @@ function renderCalendar(){
   for(let d=1;d<=days;d++){
     const k=todayKey(new Date(year,month,d));
     const done=exercises[k]&&exercises[k].length;
+    const kb=isKettlebellDay(k);
     const shk=!!shakes[k];
-    h+='<div class="cal-cell'+(done?' done':'')+(k===tK?' today':'')+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+d+(shk?'<span class="cal-dot"></span>':'')+'</div>';
+    h+='<div class="cal-cell'+(done?' done':'')+(kb?' kb':'')+(k===tK?' today':'')+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+d+(shk?'<span class="cal-dot"></span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
   box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>openDayDetail(el.getAttribute('data-k')));
@@ -1465,18 +1473,7 @@ function renderWeekSummary(){
   renderSummaryBox('statMonth',   k=>k.slice(0,7)===ym);
   renderSummaryBox('statYear',    k=>k.slice(0,4)===yr);
 }
-function kettlebellDays(pred){ let c=0; Object.keys(exercises).forEach(k=>{ if(pred&&!pred(k))return; if(exercises[k].some(it=>norm(it.name).includes('kettlebell'))) c++; }); return c; }
-function renderKettle(){
-  const box=document.getElementById('statKettle'); if(!box) return;
-  const ym=todayKey().slice(0,7), yr=String(new Date().getFullYear());
-  const life=kettlebellDays(null), month=kettlebellDays(k=>k.slice(0,7)===ym), year=kettlebellDays(k=>k.slice(0,4)===yr);
-  if(!life){ box.innerHTML='<div class="empty">No kettlebell days yet — log one with ⚡ Quick log.</div>'; return; }
-  box.innerHTML='<div class="wsum">'
-    +'<div><div class="val cu" data-to="'+month+'">'+fmtNum(month)+'</div><div class="lbl">This month</div></div>'
-    +'<div><div class="val cu" data-to="'+year+'">'+fmtNum(year)+'</div><div class="lbl">This year</div></div>'
-    +'<div><div class="val cu" data-to="'+life+'">'+fmtNum(life)+'</div><div class="lbl">Lifetime</div></div></div>';
-  animateCU(box);
-}
+function isKettlebellDay(k){ return exercises[k] && exercises[k].some(it=>norm(it.name).includes('kettlebell')); }
 
 /* stats page helpers */
 function currentShakeStreak(){ let s=0,d=new Date(); if(!shakes[todayKey(d)]) d.setDate(d.getDate()-1); while(shakes[todayKey(d)]){ s++; d.setDate(d.getDate()-1);} return s; }
@@ -1535,7 +1532,7 @@ function renderMusclePie(){
   }); });
   if(!total){ box.innerHTML='<div class="empty">Tag exercises with a muscle group to see your breakdown.</div>'; return; }
   const order=GROUPS.filter(g=>vals[g]);
-  const COL = theme==='night' ? GROUP_GREYS : GROUP_COLORS;
+  const COL = GROUP_COLORS;
   const r=54, cx=75, cy=75;
   const pt=ang=>{ const a=(ang-90)*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; };
   let circles='';
@@ -1811,7 +1808,6 @@ function renderProjections(){
 function renderStats(){
   applyDash();
   renderWeekSummary();
-  renderKettle();
   renderVolumeTrend();
   renderMusclePie();
   renderInsights();
