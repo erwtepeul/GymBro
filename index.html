@@ -568,7 +568,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.40.0</div>
+    <div class="ver-foot" id="verLabel">v1.40.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -634,7 +634,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.40.0';
+const APP_VERSION='1.40.1';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1014,7 +1014,7 @@ function renderList(elId, day){
   items.forEach((it,i)=>{
     const isBest = it.weight!=null && it.weight===bestFor(it.name);
     const li=document.createElement('li'); li.className='entry';
-    li.innerHTML='<span class="name link"></span><span class="w"></span><span class="acts"><button class="edit" aria-label="edit">✎</button><button class="del" aria-label="delete">✕</button></span>';
+    li.innerHTML='<span class="name link"></span><span class="w"></span><span class="acts"><button class="edit" aria-label="edit">✏️</button><button class="del" aria-label="delete">✕</button></span>';
     li.querySelector('.name').textContent=it.name+(isBest?' 🏆':'');
     li.querySelector('.name').onclick=()=>openExerciseHistory(it.name);
     li.querySelector('.w').textContent=fmtEntry(it);
@@ -1086,15 +1086,15 @@ document.getElementById('editSave').onclick=()=>{
   it.reps=cardio?null:(document.getElementById('editReps').value===''?null:parseInt(document.getElementById('editReps').value,10));
   it.dist=cardio?(document.getElementById('editDist').value===''?null:parseFloat(document.getElementById('editDist').value)):null;
   it.mins=cardio?(document.getElementById('editMins').value===''?null:parseFloat(document.getElementById('editMins').value)):null;
-  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderWeeklyGoal(); showToast('Saved ✓');
+  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal(); showToast('Saved ✓');
 };
 document.getElementById('editDelete').onclick=()=>{
   if(!editTarget) return;
   const day=editTarget.day, idx=editTarget.idx, removed=exercises[day][idx];
   exercises[day].splice(idx,1);
   if(!exercises[day].length) delete exercises[day];
-  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderWeeklyGoal();
-  showToast('Deleted '+removed.name, ()=>{ const a=exercises[day]||(exercises[day]=[]); a.splice(Math.min(idx,a.length),0,removed); DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); });
+  DB.set('exercises',exercises); closeEdit(); updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal();
+  showToast('Deleted '+removed.name, ()=>{ const a=exercises[day]||(exercises[day]=[]); a.splice(Math.min(idx,a.length),0,removed); DB.set('exercises',exercises); updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal(); });
 };
 
 /* weekly workout goal */
@@ -1805,10 +1805,11 @@ function renderLog(){
     head.innerHTML='<span class="wk">'+prettyDate(day)+shk+'</span><span class="muted">'+cnt+' exercise'+(cnt>1?'s':'')+kgStr+'</span>';
     el.appendChild(head);
     if(idx<logFull){
-      exercises[day].forEach(it=>{
+      exercises[day].forEach((it,i)=>{
         const r=document.createElement('div'); r.className='weekrow';
-        r.innerHTML='<span class="muted link" style="padding-left:8px">'+it.name+'</span><span class="kg">'+fmtEntry(it)+'</span>';
+        r.innerHTML='<span class="muted link" style="padding-left:8px">'+it.name+'</span><span class="kg"><button class="wedit" aria-label="Edit">✏️</button>'+fmtEntry(it)+'</span>';
         r.querySelector('.link').onclick=()=>openExerciseHistory(it.name);
+        r.querySelector('.wedit').onclick=()=>openEdit(day,i);
         el.appendChild(r);
       });
     }
