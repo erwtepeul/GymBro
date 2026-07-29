@@ -19,3 +19,13 @@ Serve the folder over HTTPS or `localhost`, open `index.html` on your phone, the
 - `manifest.webmanifest` — PWA manifest (fullscreen display)
 - `sw.js` — service worker for offline caching
 - `icons/` — app icons (clean-minimal dumbbell)
+- `test.mjs` — logic test harness (see below)
+
+## Tests
+
+Run `node test.mjs` from the repo root. The harness parses the real
+date/streak/momentum functions out of `index.html` and runs them in an
+isolated scope, so the tests always check the shipped source (no drifting
+copy). No dependencies, no build step. It covers date helpers (`todayKey`,
+`mondayOf`), volume/1RM math, weekly aggregates, workout & shake streaks,
+and the Momentum score.
