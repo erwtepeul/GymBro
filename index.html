@@ -418,8 +418,10 @@
     <h2>On This Day</h2>
     <div class="card"><div id="onThisDay"></div></div>
 
-    <h2>Today's Exercises</h2>
-    <div class="card"><ul id="exList"></ul></div>
+    <div id="homeTodayEx">
+      <h2>Today's Exercises</h2>
+      <div class="card"><ul id="exList"></ul></div>
+    </div>
   </section>
 
   <!-- ADD -->
@@ -515,6 +517,7 @@
       <div class="set-row"><span>🔊 Sound</span><span class="val"><b id="setSound">Off</b><button id="soundToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>🎉 Today confetti</span><span class="val"><b id="setConfetti">On</b><button id="confettiToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>🔔 Reminders</span><span class="val"><b id="setRemind">Off</b><button id="remindToggle" class="ghost">Toggle</button></span></div>
+      <div class="set-row"><span>📋 Today's exercises</span><span class="val"><b id="setTodayEx">On</b><button id="todayExToggle" class="ghost">Toggle</button></span></div>
     </div>
 
     <h2>Goals</h2>
@@ -553,7 +556,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.36.2</div>
+    <div class="ver-foot" id="verLabel">v1.37.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -619,7 +622,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.36.2';
+const APP_VERSION='1.37.0';
 
 /* storage */
 const DB={
@@ -655,6 +658,8 @@ let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
 let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
 let reminders=DB.get('reminders',false);     // opt-in reminder notifications
+let showTodayEx=DB.get('showTodayEx',true);  // show Today's Exercises on home
+function applyHomeToggles(){ const el=document.getElementById('homeTodayEx'); if(el) el.style.display=showTodayEx?'':'none'; }
 function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
@@ -828,9 +833,11 @@ function renderSettings(){
   document.getElementById('setSound').textContent=sound?'On':'Off';
   document.getElementById('setConfetti').textContent=snapConfetti?'On':'Off';
   document.getElementById('setRemind').textContent=reminders?'On':'Off';
+  document.getElementById('setTodayEx').textContent=showTodayEx?'On':'Off';
   document.getElementById('setBackup').textContent=backupDays>0?(backupDays+' day'+(backupDays>1?'s':'')):'Off';
 }
 document.getElementById('confettiToggle').onclick=()=>{ snapConfetti=!snapConfetti; DB.set('snapConfetti',snapConfetti); renderSettings(); };
+document.getElementById('todayExToggle').onclick=()=>{ showTodayEx=!showTodayEx; DB.set('showTodayEx',showTodayEx); applyHomeToggles(); renderSettings(); };
 document.getElementById('remindToggle').onclick=()=>{
   if(!reminders){ if('Notification' in window){ Notification.requestPermission().then(p=>{ reminders=(p==='granted'); DB.set('reminders',reminders); renderSettings(); if(reminders){ checkReminders(); } else alert('Notification permission was not granted.'); }); } else alert('Notifications are not supported on this device.'); }
   else { reminders=false; DB.set('reminders',reminders); renderSettings(); }
@@ -1790,16 +1797,16 @@ document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false;
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false; showTodayEx=true;
   groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
   applyGlow(); rebuildGroups();
-  updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
+  updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,theme,groups:groupCfg,dash};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1850,12 +1857,13 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.sound==='boolean') sound=d.sound;
       if(typeof d.snapConfetti==='boolean') snapConfetti=d.snapConfetti;
       if(typeof d.reminders==='boolean') reminders=d.reminders;
+      if(typeof d.showTodayEx==='boolean') showTodayEx=d.showTodayEx;
       if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
       if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
       if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
       applyTheme(); applyGlow(); rebuildGroups();
-      updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
+      updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles();
       showToast('Backup imported ✓');
     }catch(err){ alert('Could not read that backup file.'); }
     e.target.value='';
@@ -1864,6 +1872,7 @@ document.getElementById('importFile').onchange=e=>{
 };
 
 updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay(); renderSnapshot(true);
+applyHomeToggles();
 setTimeout(checkReminders,1500);
 
 /* service worker + auto-update */
