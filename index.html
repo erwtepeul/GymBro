@@ -198,6 +198,7 @@
   .cal-cell.done{border-color:var(--neon);color:var(--neon);box-shadow:var(--glow)}
   .cal-cell.today{color:var(--neon2)}
   .cal-cell.today.done{color:var(--neon)}
+  .cal-cell[data-k]{cursor:pointer}
 
   .danger-btn{margin-top:22px;width:100%;background:transparent;color:var(--danger);
     border:2px solid var(--danger);box-shadow:none}
@@ -536,7 +537,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.31.0</div>
+    <div class="ver-foot" id="verLabel">v1.32.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -602,7 +603,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.31.0';
+const APP_VERSION='1.32.0';
 
 /* storage */
 const DB={
@@ -1225,6 +1226,16 @@ function renderWeightChart(){
   box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+goalLine+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
 }
 
+function openDayDetail(k){
+  document.getElementById('exModalTitle').textContent=prettyDate(k);
+  const arr=exercises[k]||[]; let html='<div class="hint" style="margin:0 0 10px">🥤 '+(shakes[k]?'Shake taken':'No shake')+'</div>';
+  if(!arr.length) html+='<div class="empty">No exercises.</div>';
+  else html+=arr.map(it=>'<div class="weekrow"><span class="muted link">'+it.name+'</span><span class="kg">'+fmtEntry(it)+'</span></div>').join('');
+  const tot=arr.reduce((s,it)=>s+vol(it),0); if(tot>0) html+='<div class="hint" style="text-align:right;margin-top:8px">Total '+fmtNum(tot)+' kg</div>';
+  const body=document.getElementById('exModalBody'); body.innerHTML=html;
+  body.querySelectorAll('.link').forEach((sp,i)=>sp.onclick=()=>openExerciseHistory(arr[i].name));
+  document.getElementById('exModal').hidden=false;
+}
 function renderCalendar(){
   const box=document.getElementById('logCalendar');
   const year=calRef.getFullYear(), month=calRef.getMonth();
@@ -1243,9 +1254,10 @@ function renderCalendar(){
     const k=todayKey(new Date(year,month,d));
     const done=exercises[k]&&exercises[k].length;
     const shk=!!shakes[k];
-    h+='<div class="cal-cell'+(done?' done':'')+(k===tK?' today':'')+'">'+d+(shk?'<span class="cal-dot"></span>':'')+'</div>';
+    h+='<div class="cal-cell'+(done?' done':'')+(k===tK?' today':'')+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+d+(shk?'<span class="cal-dot"></span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
+  box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>openDayDetail(el.getAttribute('data-k')));
   document.getElementById('calPrev').onclick=()=>{ calRef.setMonth(calRef.getMonth()-1); renderCalendar(); };
   document.getElementById('calNext').onclick=()=>{ if(atCurrent)return; calRef.setMonth(calRef.getMonth()+1); renderCalendar(); };
 }
@@ -1342,18 +1354,19 @@ function favoriteExercise(){
   Object.values(exercises).forEach(a=>a.forEach(it=>{ if(norm(it.name)==='cycling') return; cnt[it.name]=(cnt[it.name]||0)+1; if(cnt[it.name]>bc){bc=cnt[it.name];bn=it.name;} }));
   return bn?{name:bn,count:bc}:null;
 }
+let trendMetric=0; const TREND_METRICS=[['volume','Weekly volume (kg)'],['workouts','Workouts per week'],['avg','Avg kg / workout']];
 function renderVolumeTrend(){
   const box=document.getElementById('statTrend');
   const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
-  if(!days.length){ box.innerHTML='<div class="empty">Log workouts to see your volume trend.</div>'; return; }
-  let mon=mondayOf(new Date(days[0]+'T00:00:00')); const end=mondayOf();
-  const pts=[];
-  while(mon<=end){
-    let v=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d); if(exercises[k]) v+=exercises[k].reduce((s,it)=>s+vol(it),0); }
-    pts.push({label:todayKey(mon), value:Math.round(v)});
-    mon=new Date(mon); mon.setDate(mon.getDate()+7);
-  }
-  box.innerHTML=miniChart(pts.slice(-12)) || '<div class="empty">Not enough data yet.</div>';
+  if(!days.length){ box.innerHTML='<div class="empty">Log workouts to see your trend.</div>'; return; }
+  const mk=TREND_METRICS[trendMetric][0], mlabel=TREND_METRICS[trendMetric][1];
+  let mon=mondayOf(new Date(days[0]+'T00:00:00')); const end=mondayOf(); const pts=[];
+  while(mon<=end){ let v=0,w=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d); if(exercises[k]&&exercises[k].length){ w++; v+=exercises[k].reduce((s,it)=>s+vol(it),0); } }
+    const val = mk==='volume'?Math.round(v) : mk==='workouts'?w : (w?Math.round(v/w):0);
+    pts.push({label:todayKey(mon), value:val}); mon=new Date(mon); mon.setDate(mon.getDate()+7); }
+  box.innerHTML=(miniChart(pts.slice(-12))||'<div class="empty">Not enough data yet.</div>')+'<div class="hint" style="text-align:center;margin-top:6px">'+mlabel+' · tap to change</div>';
+  box.style.cursor='pointer';
+  box.onclick=()=>{ trendMetric=(trendMetric+1)%TREND_METRICS.length; renderVolumeTrend(); };
 }
 let pieMetric=0; const PIE_METRICS=[['count','By sets'],['volume','By volume'],['days','By sessions']];
 function renderMusclePie(){
