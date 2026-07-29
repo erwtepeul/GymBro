@@ -540,7 +540,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.34.0</div>
+    <div class="ver-foot" id="verLabel">v1.34.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -606,7 +606,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.34.0';
+const APP_VERSION='1.34.1';
 
 /* storage */
 const DB={
@@ -1072,7 +1072,7 @@ function weeklyStreak(){
   return streak;
 }
 function weekVolume(mon){ let v=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d); if(exercises[k]) v+=exercises[k].reduce((s,it)=>s+vol(it),0); } return v; }
-let goalMetric=0; const GOAL_METRICS=['workouts','volume','shakes'];
+let goalMetric=DB.get('goalMetric',0); const GOAL_METRICS=['workouts','volume','shakes'];
 function renderWeeklyGoal(){
   const box=document.getElementById('goalwBox'); const mon=mondayOf();
   let done,target,center,sub,streakLine='';
@@ -1091,7 +1091,7 @@ function renderWeeklyGoal(){
     +'<div class="goalw-streak">'+(streakLine||'tap to switch')+'</div></div>';
   box.innerHTML=ring+info;
   box.style.cursor='pointer';
-  box.onclick=()=>{ goalMetric=(goalMetric+1)%GOAL_METRICS.length; renderWeeklyGoal(); };
+  box.onclick=()=>{ goalMetric=(goalMetric+1)%GOAL_METRICS.length; DB.set('goalMetric',goalMetric); renderWeeklyGoal(); };
 }
 
 const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
@@ -1231,7 +1231,7 @@ document.getElementById('exModalClose').onclick=()=>document.getElementById('exM
 document.getElementById('exModal').onclick=e=>{ if(e.target.id==='exModal') document.getElementById('exModal').hidden=true; };
 
 /* weight */
-let weightTf=0; const WEIGHT_TFS=[['all','All time'],['8w','Last 8 weigh-ins']];
+let weightTf=DB.get('weightTf',0); const WEIGHT_TFS=[['all','All time'],['8w','Last 8 weigh-ins']];
 function renderWeightChart(){
   const box=document.getElementById('weightChart');
   let keys=Object.keys(weights).sort();
@@ -1261,7 +1261,7 @@ function renderWeightChart(){
   box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+goalLine+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>'
     +'<div class="hint" style="text-align:center;margin-top:6px">'+WEIGHT_TFS[weightTf][1]+' · tap to change</div>';
   box.style.cursor='pointer';
-  box.onclick=()=>{ weightTf=(weightTf+1)%WEIGHT_TFS.length; renderWeightChart(); };
+  box.onclick=()=>{ weightTf=(weightTf+1)%WEIGHT_TFS.length; DB.set('weightTf',weightTf); renderWeightChart(); };
 }
 
 function openDayDetail(k){
@@ -1392,7 +1392,7 @@ function favoriteExercise(){
   Object.values(exercises).forEach(a=>a.forEach(it=>{ if(norm(it.name)==='cycling') return; cnt[it.name]=(cnt[it.name]||0)+1; if(cnt[it.name]>bc){bc=cnt[it.name];bn=it.name;} }));
   return bn?{name:bn,count:bc}:null;
 }
-let trendMetric=0; const TREND_METRICS=[['volume','Weekly volume (kg)'],['workouts','Workouts per week'],['avg','Avg kg / workout']];
+let trendMetric=DB.get('trendMetric',0); const TREND_METRICS=[['volume','Weekly volume (kg)'],['workouts','Workouts per week'],['avg','Avg kg / workout']];
 function renderVolumeTrend(){
   const box=document.getElementById('statTrend');
   const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
@@ -1404,9 +1404,9 @@ function renderVolumeTrend(){
     pts.push({label:todayKey(mon), value:val}); mon=new Date(mon); mon.setDate(mon.getDate()+7); }
   box.innerHTML=(miniChart(pts.slice(-12))||'<div class="empty">Not enough data yet.</div>')+'<div class="hint" style="text-align:center;margin-top:6px">'+mlabel+' · tap to change</div>';
   box.style.cursor='pointer';
-  box.onclick=()=>{ trendMetric=(trendMetric+1)%TREND_METRICS.length; renderVolumeTrend(); };
+  box.onclick=()=>{ trendMetric=(trendMetric+1)%TREND_METRICS.length; DB.set('trendMetric',trendMetric); renderVolumeTrend(); };
 }
-let pieMetric=0; const PIE_METRICS=[['count','By sets'],['volume','By volume'],['days','By sessions']];
+let pieMetric=DB.get('pieMetric',0); const PIE_METRICS=[['count','By sets'],['volume','By volume'],['days','By sessions']];
 function renderMusclePie(){
   const box=document.getElementById('statPie');
   const mkey=PIE_METRICS[pieMetric][0], mlabel=PIE_METRICS[pieMetric][1];
@@ -1434,7 +1434,7 @@ function renderMusclePie(){
   const legend='<div class="legend">'+order.map(g=>'<div class="lg"><span class="dot" style="background:'+COL[g]+'"></span>'+g+' <b>'+Math.round(vals[g]/total*100)+'%</b></div>').join('')+'</div>';
   box.innerHTML='<div class="pie-wrap">'+svg+legend+'</div><div class="hint" style="text-align:center;margin-top:10px">'+mlabel+' · tap to change</div>';
   box.style.cursor='pointer';
-  box.onclick=()=>{ pieMetric=(pieMetric+1)%PIE_METRICS.length; renderMusclePie(); };
+  box.onclick=()=>{ pieMetric=(pieMetric+1)%PIE_METRICS.length; DB.set('pieMetric',pieMetric); renderMusclePie(); };
 }
 function renderHeatmap(){
   const box=document.getElementById('statHeat');
