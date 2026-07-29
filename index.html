@@ -50,17 +50,17 @@
     --glow-cy:0 0 12px rgba(56,189,248,.5), 0 0 26px rgba(56,189,248,.2);
     --ga:rgba(99,102,241,.12); --gb:rgba(56,189,248,.08); --focus:rgba(99,102,241,.15);
   }
-  html[data-theme="forest"]{
-    --neon:#34d399; --neon2:#a7f3d0;
-    --glow:0 0 12px rgba(52,211,153,.55), 0 0 26px rgba(52,211,153,.25);
-    --glow-cy:0 0 12px rgba(167,243,208,.5), 0 0 26px rgba(167,243,208,.2);
-    --ga:rgba(52,211,153,.12); --gb:rgba(167,243,208,.08); --focus:rgba(52,211,153,.15);
+  html[data-theme="rose"]{
+    --neon:#fb5c8d; --neon2:#ff9e7d;
+    --glow:0 0 12px rgba(251,92,141,.55), 0 0 26px rgba(251,92,141,.25);
+    --glow-cy:0 0 12px rgba(255,158,125,.5), 0 0 26px rgba(255,158,125,.2);
+    --ga:rgba(251,92,141,.12); --gb:rgba(255,158,125,.08); --focus:rgba(251,92,141,.15);
   }
-  html[data-theme="bubblegum"]{
-    --neon:#ff4fd8; --neon2:#38e8ff;
-    --glow:0 0 12px rgba(255,79,216,.55), 0 0 26px rgba(255,79,216,.25);
-    --glow-cy:0 0 12px rgba(56,232,255,.5), 0 0 26px rgba(56,232,255,.2);
-    --ga:rgba(255,79,216,.12); --gb:rgba(56,232,255,.08); --focus:rgba(255,79,216,.15);
+  html[data-theme="lime"]{
+    --neon:#b6ff3d; --neon2:#00e6c3;
+    --glow:0 0 12px rgba(182,255,61,.55), 0 0 26px rgba(182,255,61,.25);
+    --glow-cy:0 0 12px rgba(0,230,195,.5), 0 0 26px rgba(0,230,195,.2);
+    --ga:rgba(182,255,61,.12); --gb:rgba(0,230,195,.08); --focus:rgba(182,255,61,.15);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
@@ -540,7 +540,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.35.0</div>
+    <div class="ver-foot" id="verLabel">v1.35.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -606,7 +606,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.35.0';
+const APP_VERSION='1.35.1';
 
 /* storage */
 const DB={
@@ -648,7 +648,7 @@ let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 /* theme */
-const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'cobalt',name:'Cobalt',a:'#6366f1',b:'#38bdf8'},{id:'forest',name:'Forest',a:'#34d399',b:'#a7f3d0'},{id:'bubblegum',name:'Bubblegum',a:'#ff4fd8',b:'#38e8ff'}];
+const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'cobalt',name:'Cobalt',a:'#6366f1',b:'#38bdf8'},{id:'rose',name:'Rose',a:'#fb5c8d',b:'#ff9e7d'},{id:'lime',name:'Lime',a:'#b6ff3d',b:'#00e6c3'}];
 if(!THEMES.some(t=>t.id===theme)){ theme='neon'; DB.set('theme',theme); }
 function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
 applyTheme();
