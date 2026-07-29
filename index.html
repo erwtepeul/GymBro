@@ -564,7 +564,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.38.1</div>
+    <div class="ver-foot" id="verLabel">v1.38.2</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -630,7 +630,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.38.1';
+const APP_VERSION='1.38.2';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1891,13 +1891,15 @@ async function renderBackupStatus(){
   const protectedOk = persisted && (autoHandle && !autoNeedsAuth);
   let ico,cls,head,sub;
   if(protectedOk){ ico='🛡️'; cls='ok'; head='Your data is protected.'; sub='Auto-backup on · storage persisted · last backup '+fmtAgo(last)+'.'; }
-  else if(autoHandle&&autoNeedsAuth){ ico='🔓'; cls='warn'; head='Tap “Resume” to continue auto-backup.';
-    sub = installed
-      ? 'Your last backup was '+fmtAgo(last)+'. This should only ask once — tap Resume.'
-      : 'For security, browsers re-ask each launch. To stop the repeated prompts, install GymBro to your home screen (browser menu → “Add to Home Screen” / “Install”) — then permission sticks. Last backup '+fmtAgo(last)+'.'; }
+  else if(autoHandle&&autoNeedsAuth){ ico='🔓'; cls='warn'; head='Auto-backup is paused.';
+    sub = (installed
+      ? 'Your browser re-asks for file access after each launch (a known limitation on some platforms). Tap Resume to write now, or '
+      : 'For security, browsers re-ask each launch. Installing GymBro to your home screen usually makes it stick — or ')
+      + '<a href="#" id="bkOff" style="color:var(--neon2);font-weight:800">turn auto-backup off</a> and rely on the reminder + Export. Last backup '+fmtAgo(last)+'.'; }
   else { ico='⚠️'; cls='warn'; head='Your data lives only on this device.'; sub='Clearing this browser, deleting the app, or storage cleanup will erase everything. '+(FS_SUPPORTED?'Turn on Auto-backup':'Export a backup file regularly')+' — last backup '+fmtAgo(last)+'.'; }
   box.className='bk-status '+cls;
   box.innerHTML='<span class="bk-ico">'+ico+'</span><span><span>'+head+'</span><div class="bk-sub">'+sub+'</div></span>';
+  const off=document.getElementById('bkOff'); if(off) off.onclick=(e)=>{ e.preventDefault(); disableAutoBackup(); };
 }
 async function initBackup(){
   requestPersist();
