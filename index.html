@@ -291,6 +291,16 @@
   .goalw-streak{font-size:12px;font-weight:800;color:var(--neon2);margin-top:6px;text-transform:uppercase;letter-spacing:1px}
   .goalw-info{display:flex;flex-direction:column;justify-content:center}
   .goalw .ghost{padding:8px 14px;font-size:13px;flex:0 0 auto}
+  .momo{display:flex;align-items:center;gap:16px}
+  .momo-score{flex:0 0 auto;text-align:center;line-height:1}
+  .momo-score b{font-size:40px;font-weight:900;color:var(--neon);font-variant-numeric:tabular-nums}
+  .momo-score span{display:block;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:1px;margin-top:2px}
+  .momo-meta{flex:1;min-width:0}
+  .momo-lvl{font-size:15px;font-weight:900;color:var(--ink);letter-spacing:.5px}
+  .momo-bar{height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin:8px 0 7px}
+  .momo-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--neon),var(--neon2))}
+  .momo-parts{font-size:11px;font-weight:700;color:var(--muted)}
+  .ghost-row{font-size:14px;font-weight:800;margin-top:14px;text-align:center}
 
   /* entry edit button */
   li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none}
@@ -401,6 +411,9 @@
 
     <h2>Weekly Goal</h2>
     <div class="card"><div class="goalw" id="goalwBox"></div></div>
+
+    <h2>Momentum</h2>
+    <div class="card"><div id="momentumBox"></div></div>
 
     <h2>On This Day</h2>
     <div class="card"><div id="onThisDay"></div></div>
@@ -540,7 +553,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.35.3</div>
+    <div class="ver-foot" id="verLabel">v1.36.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -606,7 +619,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.35.3';
+const APP_VERSION='1.36.0';
 
 /* storage */
 const DB={
@@ -943,6 +956,7 @@ function renderShake(){
   document.getElementById('shakeStreak').textContent = s>0 ? '🔥 '+s+'-day streak' : 'No streak yet';
   document.getElementById('shakeTitle').textContent = shakeTier(s);
   renderSnapshot();
+  renderMomentum();
 }
 document.getElementById('shakeBtn').onclick=()=>{ const k=todayKey(); const on=!shakes[k]; if(on)shakes[k]=true;else delete shakes[k]; DB.set('shakes',shakes); renderShake(); buzz(12); if(on) beep(660,0.1); };
 
@@ -1072,6 +1086,49 @@ function weeklyStreak(){
   return streak;
 }
 function weekVolume(mon){ let v=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d); if(exercises[k]) v+=exercises[k].reduce((s,it)=>s+vol(it),0); } return v; }
+/* ---- Momentum score + Race-your-ghost ---- */
+function volWin(n,endDaysAgo){ let v=0; for(let i=0;i<n;i++){ const d=new Date(); d.setDate(d.getDate()-endDaysAgo-i); const k=todayKey(d); if(exercises[k]) v+=exercises[k].reduce((s,it)=>s+vol(it),0); } return v; }
+function momoLevel(s){ if(s>=80)return['🔥','Beast']; if(s>=60)return['💪','Savage']; if(s>=40)return['⚡','Contender']; if(s>=20)return['🧱','Grinder']; return['🌱','Rookie']; }
+function computeMomentum(){
+  const mon=mondayOf();
+  let cons=0; for(let i=0;i<4;i++){ const m=new Date(mon); m.setDate(mon.getDate()-7*i); cons+=Math.min(1, workoutsInWeek(m)/Math.max(1,weeklyGoal)); }
+  cons=cons/4;
+  const recent=weekVolume(mon)+weekVolume((()=>{const m=new Date(mon);m.setDate(mon.getDate()-7);return m;})());
+  const prior=weekVolume((()=>{const m=new Date(mon);m.setDate(mon.getDate()-14);return m;})())+weekVolume((()=>{const m=new Date(mon);m.setDate(mon.getDate()-21);return m;})());
+  let tr; if(prior<=0){ tr=recent>0?0.6:0.4; } else { tr=Math.max(0,Math.min(1,(recent/prior-0.8)/0.4)); }
+  const ws=Math.min(weeklyStreak(),8)/8, ss=Math.min(currentShakeStreak(),14)/14;
+  const strk=ws*0.6+ss*0.4;
+  return {score:Math.round(cons*40+tr*35+strk*25), cons, tr, strk};
+}
+function ghostSpark(cur,gh){
+  const all=cur.concat(gh); const mx=Math.max(1,...all); const W=280,H=54,pad=5,n=cur.length;
+  const xs=i=>pad+i*((W-2*pad)/(n-1)), ys=v=>H-pad-(v/mx)*(H-2*pad);
+  const line=arr=>arr.map((v,i)=>(i?'L':'M')+xs(i).toFixed(1)+' '+ys(v).toFixed(1)).join(' ');
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px;margin-top:10px">'
+    +'<path d="'+line(gh)+'" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 3" opacity=".8"/>'
+    +'<path d="'+line(cur)+'" fill="none" stroke="var(--neon)" stroke-width="2.5" stroke-linejoin="round"/></svg>'
+    +'<div class="hint" style="text-align:center;margin-top:2px">solid = last 4 weeks · dashed = the 4 before</div>';
+}
+function renderMomentum(){
+  const box=document.getElementById('momentumBox'); if(!box) return;
+  const has=Object.keys(exercises).some(k=>exercises[k]&&exercises[k].length);
+  if(!has){ box.innerHTML='<div class="empty">Log a few workouts to build momentum.</div>'; return; }
+  const M=computeMomentum(); const [emo,lvl]=momoLevel(M.score);
+  const nowV=volWin(7,0), ghostV=volWin(7,28);
+  let pct=ghostV>0?Math.round((nowV-ghostV)/ghostV*100):(nowV>0?100:0);
+  const ahead=nowV>=ghostV;
+  const ghostTxt = (ghostV<=0&&nowV<=0) ? '<span style="color:var(--muted)">🏃 No ghost to race yet</span>'
+    : (ahead ? '<span style="color:var(--neon2)">🏃 <b>'+Math.abs(pct)+'% ahead</b> of last month’s self</span>'
+             : '<span style="color:var(--danger)">🐢 <b>'+Math.abs(pct)+'% behind</b> last month’s self</span>');
+  const mon=mondayOf(); const cur=[],gh=[];
+  for(let i=3;i>=0;i--){ const c=new Date(mon); c.setDate(mon.getDate()-7*i); cur.push(weekVolume(c)); const g=new Date(mon); g.setDate(mon.getDate()-7*(i+4)); gh.push(weekVolume(g)); }
+  box.innerHTML='<div class="momo"><div class="momo-score"><b>'+M.score+'</b><span>/ 100</span></div>'
+    +'<div class="momo-meta"><div class="momo-lvl">'+emo+' '+lvl+'</div>'
+    +'<div class="momo-bar"><i style="width:'+M.score+'%"></i></div>'
+    +'<div class="momo-parts">Consistency '+Math.round(M.cons*100)+'% · Trend '+Math.round(M.tr*100)+'% · Streak '+Math.round(M.strk*100)+'%</div></div></div>'
+    +'<div class="ghost-row">'+ghostTxt+'</div>'
+    +ghostSpark(cur,gh);
+}
 let goalMetric=DB.get('goalMetric',0); const GOAL_METRICS=['workouts','volume','shakes'];
 function renderWeeklyGoal(){
   const box=document.getElementById('goalwBox'); const mon=mondayOf();
@@ -1092,6 +1149,7 @@ function renderWeeklyGoal(){
   box.innerHTML=ring+info;
   box.style.cursor='pointer';
   box.onclick=()=>{ goalMetric=(goalMetric+1)%GOAL_METRICS.length; DB.set('goalMetric',goalMetric); renderWeeklyGoal(); };
+  renderMomentum();
 }
 
 const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
