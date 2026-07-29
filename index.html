@@ -199,10 +199,12 @@
   .cal-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
     width:4px;height:4px;border-radius:50%;background:var(--neon2);box-shadow:0 0 4px var(--neon2)}
   .cal-cell.done{border-color:#ffb020;color:#ffb020;box-shadow:0 0 8px rgba(255,176,32,.45),0 0 18px rgba(255,176,32,.2)}
-  .cal-cell.kb{border-color:#b46bff;color:#b46bff;box-shadow:0 0 8px rgba(180,107,255,.5),0 0 18px rgba(180,107,255,.22)}
+  .cal-n{position:relative;z-index:2}
+  .kb-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64%;height:64%;
+    border:2px solid #b46bff;border-radius:50%;box-shadow:0 0 6px rgba(180,107,255,.55);z-index:1;pointer-events:none}
+  .cal-cell.kb:not(.done){border-color:#b46bff}
   .cal-cell.today{color:var(--neon2)}
   .cal-cell.today.done{color:#ffb020}
-  .cal-cell.today.kb{color:#b46bff}
   .cal-cell[data-k]{cursor:pointer}
 
   .danger-btn{margin-top:22px;width:100%;background:transparent;color:var(--danger);
@@ -574,7 +576,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.43.0</div>
+    <div class="ver-foot" id="verLabel">v1.43.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -640,7 +642,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.43.0';
+const APP_VERSION='1.43.1';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1396,7 +1398,7 @@ function renderCalendar(){
     const done=exercises[k]&&exercises[k].length;
     const kb=isKettlebellDay(k);
     const shk=!!shakes[k];
-    h+='<div class="cal-cell'+(done?' done':'')+(kb?' kb':'')+(k===tK?' today':'')+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+d+(shk?'<span class="cal-dot"></span>':'')+'</div>';
+    h+='<div class="cal-cell'+(done?' done':'')+(kb?' kb':'')+(k===tK?' today':'')+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+(kb?'<span class="kb-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
   box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>openDayDetail(el.getAttribute('data-k')));
