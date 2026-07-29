@@ -478,7 +478,6 @@
     <div class="dsec" data-sec="year"><h2>This Year</h2><div class="card"><div id="statYear"></div></div></div>
     <div class="dsec" data-sec="muscle"><h2>Muscle Balance</h2><div class="card"><div id="statPie"></div></div></div>
     <div class="dsec" data-sec="insights"><h2>Insights</h2><div class="card"><div id="statInsights"></div></div></div>
-    <div class="dsec" data-sec="standards"><h2>Strength Standards</h2><div class="card"><div id="statStandards"></div></div></div>
     <div class="dsec" data-sec="proj"><h2>Projections</h2><div class="card"><div id="statProj"></div></div></div>
     <div class="dsec" data-sec="trend"><h2>Volume Trend</h2><div class="card"><div id="statTrend"></div></div></div>
     <div class="dsec" data-sec="heat"><h2>Year Heatmap</h2><div class="card"><div id="statHeat"></div></div></div>
@@ -509,6 +508,7 @@
     <div class="card">
       <div class="set-row"><span>🎯 Weight goal</span><span class="val"><b id="setGoalVal">75</b> kg <button id="goalEdit" class="ghost">Change</button></span></div>
       <div class="set-row"><span>🏋️ Workouts / week</span><span class="val"><b id="setWeeklyVal">3</b><button id="wgoalEdit" class="ghost">Change</button></span></div>
+      <div class="set-row"><span>📦 Weekly volume goal</span><span class="val"><b id="setWeeklyKg">Auto</b><button id="wkgEdit" class="ghost">Change</button></span></div>
     </div>
 
     <h2>Log</h2>
@@ -540,7 +540,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.33.0</div>
+    <div class="ver-foot" id="verLabel">v1.34.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -606,7 +606,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.33.0';
+const APP_VERSION='1.34.0';
 
 /* storage */
 const DB={
@@ -634,6 +634,7 @@ let weights=DB.get('weights',{});
 let shakes=DB.get('shakes',{});
 let goal=DB.get('goal',75);                  // goal weight in kg
 let weeklyGoal=DB.get('weeklyGoal',3);       // workouts-per-week target
+let weeklyKg=DB.get('weeklyKg',0);           // weekly volume goal in kg (0 = auto)
 let logFull=DB.get('logFull',5);             // workouts shown in full on the log
 let backupDays=DB.get('backupDays',7);       // days between backup reminders (0=off)
 let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
@@ -641,7 +642,7 @@ let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
 let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
 let reminders=DB.get('reminders',false);     // opt-in reminder notifications
-function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,standards:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
+function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -795,7 +796,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['standards','🏋️ Strength standards'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -807,6 +808,7 @@ function renderSettings(){
   renderDash();
   document.getElementById('setGoalVal').textContent=goal;
   document.getElementById('setWeeklyVal').textContent=weeklyGoal;
+  document.getElementById('setWeeklyKg').textContent=weeklyKg>0?fmtNum(weeklyKg)+' kg':'Auto';
   document.getElementById('setLogFull').textContent=logFull;
   document.getElementById('setGlow').textContent=reduceGlow?'On':'Off';
   document.getElementById('setHaptics').textContent=haptics?'On':'Off';
@@ -907,6 +909,12 @@ document.getElementById('wgoalEdit').onclick=()=>{
   if(v==null) return; const n=parseInt(v,10);
   if(isNaN(n)||n<1){ alert('Enter a whole number of 1 or more.'); return; }
   weeklyGoal=n; DB.set('weeklyGoal',weeklyGoal); renderWeeklyGoal(); renderSettings(); showToast('Weekly goal: '+n+'×');
+};
+document.getElementById('wkgEdit').onclick=()=>{
+  const v=prompt('Weekly volume goal in kg (0 = auto, based on your last 4 weeks):', weeklyKg||0);
+  if(v==null) return; const n=Math.round(parseFloat(v));
+  if(isNaN(n)||n<0){ alert('Enter 0 or more.'); return; }
+  weeklyKg=n; DB.set('weeklyKg',weeklyKg); renderWeeklyGoal(); renderSettings(); showToast(n>0?('Volume goal: '+fmtNum(n)+' kg'):'Volume goal: Auto');
 };
 
 /* shake */
@@ -1070,7 +1078,7 @@ function renderWeeklyGoal(){
   let done,target,center,sub,streakLine='';
   const m=GOAL_METRICS[goalMetric];
   if(m==='workouts'){ done=workoutsInWeek(mon); target=weeklyGoal; center=done; sub='workouts this week'; const s=weeklyStreak(); streakLine=s>0?'🔥 '+s+'-week streak':''; }
-  else if(m==='volume'){ done=Math.round(weekVolume(mon)); let vs=[]; for(let i=1;i<=4;i++){ const mm=new Date(mon); mm.setDate(mon.getDate()-7*i); vs.push(weekVolume(mm)); } target=Math.max(1,Math.round(vs.reduce((a,b)=>a+b,0)/vs.length)); center=fmtNum(done); sub='kg this week'; }
+  else if(m==='volume'){ done=Math.round(weekVolume(mon)); if(weeklyKg>0){ target=weeklyKg; } else { let vs=[]; for(let i=1;i<=4;i++){ const mm=new Date(mon); mm.setDate(mon.getDate()-7*i); vs.push(weekVolume(mm)); } target=Math.max(1,Math.round(vs.reduce((a,b)=>a+b,0)/vs.length)); } center=fmtNum(done); sub='kg this week'; }
   else { done=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); if(shakes[todayKey(d)]) done++; } target=7; center=done; sub='shakes this week'; }
   const pct=Math.max(0,Math.min(1, target>0?done/target:0));
   const r=28, c=2*Math.PI*r, off=c*(1-pct);
@@ -1672,19 +1680,6 @@ function renderSuggest(){
     DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); renderSuggest(); buzz(15); showToast('Session added ✓');
   };
 }
-const STANDARDS={'bench press':[0.5,0.75,1.0,1.5,2.0],'squat':[0.75,1.25,1.5,2.25,2.75],'deadlift':[1.0,1.5,2.0,2.5,3.0],'overhead press':[0.35,0.55,0.8,1.1,1.4],'barbell row':[0.5,0.75,1.0,1.4,1.8],'incline press':[0.4,0.65,0.9,1.3,1.7]};
-const TIERS=['Untrained','Beginner','Novice','Intermediate','Advanced','Elite'];
-function renderStandards(){
-  const box=document.getElementById('statStandards'); if(!box) return;
-  const wk=Object.keys(weights).sort(); const bw=wk.length?weights[wk[wk.length-1]]:null;
-  if(!bw){ box.innerHTML='<div class="empty">Log a body weight to see strength standards.</div>'; return; }
-  const rows=[];
-  Object.keys(STANDARDS).forEach(key=>{ let best=0; Object.values(exercises).forEach(a=>a.forEach(it=>{ if(norm(it.name)===key && it.weight!=null){ const e=e1rm(it); if(e>best)best=e; } }));
-    if(best<=0) return; const ratio=best/bw; const th=STANDARDS[key]; let tier=0; th.forEach(t=>{ if(ratio>=t) tier++; }); rows.push({name:key,best,ratio,tier}); });
-  if(!rows.length){ box.innerHTML='<div class="empty">Log a main lift (bench, squat, deadlift…).</div>'; return; }
-  box.innerHTML='<div class="hint" style="margin:0 0 8px">vs body weight '+fmtDec(bw)+' kg · est. 1RM</div>'
-    +rows.map(r=>'<div class="weekrow"><span class="muted" style="text-transform:capitalize">'+r.name+'</span><span class="kg">'+fmtNum(r.best)+' kg · <b>'+TIERS[r.tier]+'</b> ('+fmtDec(r.ratio)+'×)</span></div>').join('');
-}
 function renderProjections(){
   const box=document.getElementById('statProj'); if(!box) return; const byName={};
   Object.keys(exercises).sort().forEach(k=>{ const t=new Date(k+'T00:00:00').getTime()/(1000*60*60*24*7); exercises[k].forEach(it=>{ if(it.weight==null) return; (byName[it.name]=byName[it.name]||[]).push([t,it.weight]); }); });
@@ -1702,7 +1697,6 @@ function renderStats(){
   renderVolumeTrend();
   renderMusclePie();
   renderInsights();
-  renderStandards();
   renderProjections();
   renderHeatmap();
   renderAchievements();
@@ -1738,16 +1732,16 @@ document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false;
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false;
   groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
   applyGlow(); rebuildGroups();
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,theme,groups:groupCfg,dash};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1790,6 +1784,7 @@ document.getElementById('importFile').onchange=e=>{
       shakes=(d.shakes&&typeof d.shakes==='object')?d.shakes:{};
       if(typeof d.goal==='number' && d.goal>0) goal=d.goal;
       if(typeof d.weeklyGoal==='number' && d.weeklyGoal>0) weeklyGoal=d.weeklyGoal;
+      if(typeof d.weeklyKg==='number' && d.weeklyKg>=0) weeklyKg=d.weeklyKg;
       if(typeof d.logFull==='number' && d.logFull>0) logFull=d.logFull;
       if(typeof d.backupDays==='number' && d.backupDays>=0) backupDays=d.backupDays;
       if(typeof d.reduceGlow==='boolean') reduceGlow=d.reduceGlow;
@@ -1800,7 +1795,7 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
       if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
       if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
       applyTheme(); applyGlow(); rebuildGroups();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
       showToast('Backup imported ✓');
