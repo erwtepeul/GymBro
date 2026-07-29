@@ -301,6 +301,12 @@
   .momo-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#ff8a3d,#ffcf33)}
   .momo-parts{font-size:11px;font-weight:700;color:var(--muted)}
   .ghost-row{font-size:14px;font-weight:800;margin-top:14px;text-align:center}
+  .bk-status{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;font-weight:700;
+    line-height:1.4;padding:11px 12px;border-radius:12px;margin-bottom:12px}
+  .bk-status.ok{background:rgba(57,255,20,.08);color:var(--ink);border:1px solid var(--line)}
+  .bk-status.warn{background:rgba(255,46,106,.10);color:var(--ink);border:1px solid rgba(255,46,106,.35)}
+  .bk-status .bk-ico{font-size:15px;line-height:1.2;flex:0 0 auto}
+  .bk-status .bk-sub{color:var(--muted);font-weight:600;font-size:11.5px;margin-top:2px}
 
   /* entry edit button */
   li.entry .edit{background:none;color:var(--muted);border:none;padding:6px;font-size:15px;box-shadow:none}
@@ -545,6 +551,8 @@
 
     <h2>Backup</h2>
     <div class="card" style="margin-bottom:12px">
+      <div id="backupStatus"></div>
+      <div class="set-row"><span>💾 Auto-backup</span><span class="val"><b id="setAuto">Off</b><button id="autoBackupBtn" class="ghost">Enable</button></span></div>
       <div class="set-row"><span>⏰ Reminder</span><span class="val"><b id="setBackup">7 days</b><button id="backupEdit" class="ghost">Change</button></span></div>
     </div>
     <div class="row" style="gap:10px">
@@ -556,7 +564,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.37.0</div>
+    <div class="ver-foot" id="verLabel">v1.38.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -622,12 +630,13 @@
 </div>
 
 <script>
-const APP_VERSION='1.37.0';
+const APP_VERSION='1.38.0';
 
 /* storage */
+const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
 const DB={
   get(k,d){ try{ return JSON.parse(localStorage.getItem('gymbro_'+k)) ?? d }catch(e){ return d } },
-  set(k,v){ localStorage.setItem('gymbro_'+k, JSON.stringify(v)) }
+  set(k,v){ localStorage.setItem('gymbro_'+k, JSON.stringify(v)); if(BACKUP_KEYS[k] && typeof scheduleAutoBackup==='function') scheduleAutoBackup(); }
 };
 
 /* dates */
@@ -835,6 +844,7 @@ function renderSettings(){
   document.getElementById('setRemind').textContent=reminders?'On':'Off';
   document.getElementById('setTodayEx').textContent=showTodayEx?'On':'Off';
   document.getElementById('setBackup').textContent=backupDays>0?(backupDays+' day'+(backupDays>1?'s':'')):'Off';
+  renderBackupStatus();
 }
 document.getElementById('confettiToggle').onclick=()=>{ snapConfetti=!snapConfetti; DB.set('snapConfetti',snapConfetti); renderSettings(); };
 document.getElementById('todayExToggle').onclick=()=>{ showTodayEx=!showTodayEx; DB.set('showTodayEx',showTodayEx); applyHomeToggles(); renderSettings(); };
@@ -1811,7 +1821,7 @@ function exportData(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  DB.set('lastExport',Date.now()); updateBackupBanner(); showToast('Backup downloaded ✓');
+  DB.set('lastExport',Date.now()); updateBackupBanner(); renderBackupStatus(); showToast('Backup downloaded ✓');
 }
 document.getElementById('exportBtn').onclick=exportData;
 function exportCSV(){
@@ -1825,12 +1835,76 @@ function exportCSV(){
 }
 document.getElementById('exportCsvBtn').onclick=exportCSV;
 
+/* ---------- Backup hardening: persistent storage + auto-backup to a file ---------- */
+const FS_SUPPORTED = ('showSaveFilePicker' in window);
+let autoHandle=null;      // File System Access handle (in memory)
+let autoNeedsAuth=false;  // handle exists but permission not yet granted this session
+
+const IDB={
+  open(){ return new Promise((res,rej)=>{ const r=indexedDB.open('gymbro',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  async set(k,v){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); },
+  async get(k){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readonly'); const rq=t.objectStore('kv').get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); },
+  async del(k){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').delete(k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+};
+function backupPayload(){ return JSON.stringify({app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,theme,groups:groupCfg,dash},null,2); }
+async function hasPerm(h,ask){ const o={mode:'readwrite'}; if((await h.queryPermission(o))==='granted') return true; if(ask && (await h.requestPermission(o))==='granted') return true; return false; }
+async function writeAutoBackup(ask){
+  if(!autoHandle) return false;
+  try{
+    if(!(await hasPerm(autoHandle,ask))){ autoNeedsAuth=true; renderBackupStatus(); return false; }
+    autoNeedsAuth=false;
+    const w=await autoHandle.createWritable(); await w.write(backupPayload()); await w.close();
+    DB.set('lastAuto',Date.now()); renderBackupStatus(); return true;
+  }catch(e){ return false; }
+}
+let autoTimer=null;
+function scheduleAutoBackup(){ if(!autoHandle) return; clearTimeout(autoTimer); autoTimer=setTimeout(()=>writeAutoBackup(false), 2000); }
+async function enableAutoBackup(){
+  if(!FS_SUPPORTED){ alert('Auto-backup needs a browser with the File System Access API — Chrome or Edge on desktop/Android. On iPhone/iPad, use “Export data” regularly instead (the reminder will nudge you).'); return; }
+  try{
+    const h=await window.showSaveFilePicker({ suggestedName:'gymbro-backup.json', types:[{description:'GymBro backup',accept:{'application/json':['.json']}}] });
+    autoHandle=h; await IDB.set('autoHandle',h);
+    const ok=await writeAutoBackup(true);
+    renderBackupStatus(); showToast(ok?'Auto-backup on ✓':'Auto-backup set (allow access)');
+  }catch(e){ /* user cancelled the picker */ }
+}
+async function disableAutoBackup(){ autoHandle=null; autoNeedsAuth=false; try{ await IDB.del('autoHandle'); }catch(e){} renderBackupStatus(); showToast('Auto-backup off'); }
+async function requestPersist(){ try{ if(navigator.storage&&navigator.storage.persist){ if(!(await navigator.storage.persisted())) await navigator.storage.persist(); } }catch(e){} renderBackupStatus(); }
+function fmtAgo(ts){ if(!ts) return 'never'; const d=(Date.now()-ts)/86400000; if(d<1/24) return 'just now'; if(d<1) return Math.round(d*24)+'h ago'; if(d<2) return 'yesterday'; return Math.round(d)+' days ago'; }
+async function renderBackupStatus(){
+  const box=document.getElementById('backupStatus'); if(!box) return;
+  const setA=document.getElementById('setAuto'), btn=document.getElementById('autoBackupBtn');
+  const last=Math.max(DB.get('lastExport',0)||0, DB.get('lastAuto',0)||0);
+  let persisted=false; try{ persisted=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted():false; }catch(e){}
+  // auto-backup control label
+  if(setA&&btn){
+    if(!FS_SUPPORTED){ setA.textContent='Unsupported'; btn.textContent='—'; btn.disabled=true; btn.style.opacity=.5; }
+    else if(autoHandle&&autoNeedsAuth){ setA.textContent='Needs access'; btn.textContent='Re-authorize'; btn.onclick=()=>writeAutoBackup(true); }
+    else if(autoHandle){ setA.textContent='On'; btn.textContent='Turn off'; btn.onclick=disableAutoBackup; }
+    else { setA.textContent='Off'; btn.textContent='Enable'; btn.onclick=enableAutoBackup; }
+  }
+  // status banner
+  const protectedOk = persisted && (autoHandle && !autoNeedsAuth);
+  let ico,cls,head,sub;
+  if(protectedOk){ ico='🛡️'; cls='ok'; head='Your data is protected.'; sub='Auto-backup on · storage persisted · last backup '+fmtAgo(last)+'.'; }
+  else if(autoHandle&&autoNeedsAuth){ ico='🔓'; cls='warn'; head='Auto-backup needs access.'; sub='Tap “Re-authorize” to let GymBro write your backup file again.'; }
+  else { ico='⚠️'; cls='warn'; head='Your data lives only on this device.'; sub='Clearing this browser, deleting the app, or storage cleanup will erase everything. '+(FS_SUPPORTED?'Turn on Auto-backup':'Export a backup file regularly')+' — last backup '+fmtAgo(last)+'.'; }
+  box.className='bk-status '+cls;
+  box.innerHTML='<span class="bk-ico">'+ico+'</span><span><span>'+head+'</span><div class="bk-sub">'+sub+'</div></span>';
+}
+async function initBackup(){
+  requestPersist();
+  if(FS_SUPPORTED){ try{ const h=await IDB.get('autoHandle'); if(h){ autoHandle=h; autoNeedsAuth=!(await hasPerm(h,false)); if(!autoNeedsAuth) writeAutoBackup(false); } }catch(e){} }
+  renderBackupStatus();
+}
+
 /* weekly backup reminder */
 function daysSince(ts){ return ts ? (Date.now()-ts)/86400000 : Infinity; }
 function updateBackupBanner(){
   const b=document.getElementById('backupBanner');
   const hasData=Object.keys(exercises).length>0 || Object.keys(weights).length>0;
-  const last=Math.max(DB.get('lastExport',0)||0, DB.get('backupSnooze',0)||0);
+  const last=Math.max(DB.get('lastExport',0)||0, DB.get('backupSnooze',0)||0, DB.get('lastAuto',0)||0);
   b.hidden = !(backupDays>0 && hasData && daysSince(last)>=backupDays);
 }
 document.getElementById('backupGo').onclick=exportData;
@@ -1873,6 +1947,7 @@ document.getElementById('importFile').onchange=e=>{
 
 updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay(); renderSnapshot(true);
 applyHomeToggles();
+initBackup();
 setTimeout(checkReminders,1500);
 
 /* service worker + auto-update */
