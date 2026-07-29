@@ -502,6 +502,7 @@
     <div class="dsec" data-sec="week"><h2>This Week</h2><div class="card"><div id="statSummary"></div></div></div>
     <div class="dsec" data-sec="month"><h2>This Month</h2><div class="card"><div id="statMonth"></div></div></div>
     <div class="dsec" data-sec="year"><h2>This Year</h2><div class="card"><div id="statYear"></div></div></div>
+    <div class="dsec" data-sec="kb"><h2>Kettlebell Days</h2><div class="card"><div id="statKettle"></div></div></div>
     <div class="dsec" data-sec="muscle"><h2>Muscle Balance</h2><div class="card"><div id="statPie"></div></div></div>
     <div class="dsec" data-sec="insights"><h2>Insights</h2><div class="card"><div id="statInsights"></div></div></div>
     <div class="dsec" data-sec="proj"><h2>Projections</h2><div class="card"><div id="statProj"></div></div></div>
@@ -570,7 +571,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.41.0</div>
+    <div class="ver-foot" id="verLabel">v1.42.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -636,7 +637,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.41.0';
+const APP_VERSION='1.42.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -675,7 +676,7 @@ let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
 let reminders=DB.get('reminders',false);     // opt-in reminder notifications
 let showTodayEx=DB.get('showTodayEx',true);  // show Today's Exercises on home
 function applyHomeToggles(){ const el=document.getElementById('homeTodayEx'); if(el) el.style.display=showTodayEx?'':'none'; }
-function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
+function defaultDash(){ return {week:1,month:1,year:1,kb:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -829,7 +830,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['kb','🏋️ Kettlebell days'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -1464,6 +1465,18 @@ function renderWeekSummary(){
   renderSummaryBox('statMonth',   k=>k.slice(0,7)===ym);
   renderSummaryBox('statYear',    k=>k.slice(0,4)===yr);
 }
+function kettlebellDays(pred){ let c=0; Object.keys(exercises).forEach(k=>{ if(pred&&!pred(k))return; if(exercises[k].some(it=>norm(it.name).includes('kettlebell'))) c++; }); return c; }
+function renderKettle(){
+  const box=document.getElementById('statKettle'); if(!box) return;
+  const ym=todayKey().slice(0,7), yr=String(new Date().getFullYear());
+  const life=kettlebellDays(null), month=kettlebellDays(k=>k.slice(0,7)===ym), year=kettlebellDays(k=>k.slice(0,4)===yr);
+  if(!life){ box.innerHTML='<div class="empty">No kettlebell days yet — log one with ⚡ Quick log.</div>'; return; }
+  box.innerHTML='<div class="wsum">'
+    +'<div><div class="val cu" data-to="'+month+'">'+fmtNum(month)+'</div><div class="lbl">This month</div></div>'
+    +'<div><div class="val cu" data-to="'+year+'">'+fmtNum(year)+'</div><div class="lbl">This year</div></div>'
+    +'<div><div class="val cu" data-to="'+life+'">'+fmtNum(life)+'</div><div class="lbl">Lifetime</div></div></div>';
+  animateCU(box);
+}
 
 /* stats page helpers */
 function currentShakeStreak(){ let s=0,d=new Date(); if(!shakes[todayKey(d)]) d.setDate(d.getDate()-1); while(shakes[todayKey(d)]){ s++; d.setDate(d.getDate()-1);} return s; }
@@ -1798,6 +1811,7 @@ function renderProjections(){
 function renderStats(){
   applyDash();
   renderWeekSummary();
+  renderKettle();
   renderVolumeTrend();
   renderMusclePie();
   renderInsights();
