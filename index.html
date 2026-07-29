@@ -478,6 +478,8 @@
     <div class="dsec" data-sec="year"><h2>This Year</h2><div class="card"><div id="statYear"></div></div></div>
     <div class="dsec" data-sec="muscle"><h2>Muscle Balance</h2><div class="card"><div id="statPie"></div></div></div>
     <div class="dsec" data-sec="insights"><h2>Insights</h2><div class="card"><div id="statInsights"></div></div></div>
+    <div class="dsec" data-sec="standards"><h2>Strength Standards</h2><div class="card"><div id="statStandards"></div></div></div>
+    <div class="dsec" data-sec="proj"><h2>Projections</h2><div class="card"><div id="statProj"></div></div></div>
     <div class="dsec" data-sec="trend"><h2>Volume Trend</h2><div class="card"><div id="statTrend"></div></div></div>
     <div class="dsec" data-sec="heat"><h2>Year Heatmap</h2><div class="card"><div id="statHeat"></div></div></div>
     <div class="dsec" data-sec="badges"><h2>Achievements</h2><div class="card"><div id="statBadges"></div></div></div>
@@ -500,6 +502,7 @@
       <div class="set-row"><span>📳 Haptics</span><span class="val"><b id="setHaptics">On</b><button id="hapticToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>🔊 Sound</span><span class="val"><b id="setSound">Off</b><button id="soundToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>🎉 Today confetti</span><span class="val"><b id="setConfetti">On</b><button id="confettiToggle" class="ghost">Toggle</button></span></div>
+      <div class="set-row"><span>🔔 Reminders</span><span class="val"><b id="setRemind">Off</b><button id="remindToggle" class="ghost">Toggle</button></span></div>
     </div>
 
     <h2>Goals</h2>
@@ -537,7 +540,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.32.0</div>
+    <div class="ver-foot" id="verLabel">v1.33.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -603,7 +606,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.32.0';
+const APP_VERSION='1.33.0';
 
 /* storage */
 const DB={
@@ -637,7 +640,8 @@ let reduceGlow=DB.get('reduceGlow',false);   // accessibility: dim the neon glow
 let haptics=DB.get('haptics',true);          // vibration feedback
 let sound=DB.get('sound',false);             // sound feedback
 let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
-function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,trend:1,heat:1,badges:1,recap:1}; }
+let reminders=DB.get('reminders',false);     // opt-in reminder notifications
+function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,standards:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -791,7 +795,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['standards','🏋️ Strength standards'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -808,9 +812,22 @@ function renderSettings(){
   document.getElementById('setHaptics').textContent=haptics?'On':'Off';
   document.getElementById('setSound').textContent=sound?'On':'Off';
   document.getElementById('setConfetti').textContent=snapConfetti?'On':'Off';
+  document.getElementById('setRemind').textContent=reminders?'On':'Off';
   document.getElementById('setBackup').textContent=backupDays>0?(backupDays+' day'+(backupDays>1?'s':'')):'Off';
 }
 document.getElementById('confettiToggle').onclick=()=>{ snapConfetti=!snapConfetti; DB.set('snapConfetti',snapConfetti); renderSettings(); };
+document.getElementById('remindToggle').onclick=()=>{
+  if(!reminders){ if('Notification' in window){ Notification.requestPermission().then(p=>{ reminders=(p==='granted'); DB.set('reminders',reminders); renderSettings(); if(reminders){ checkReminders(); } else alert('Notification permission was not granted.'); }); } else alert('Notifications are not supported on this device.'); }
+  else { reminders=false; DB.set('reminders',reminders); renderSettings(); }
+};
+function checkReminders(){
+  if(!reminders || !('Notification' in window) || Notification.permission!=='granted') return;
+  const flag='gymbro_remind_'+todayKey(); if(localStorage.getItem(flag)) return;
+  const notify=(t,b)=>{ try{ if(navigator.serviceWorker&&navigator.serviceWorker.ready){ navigator.serviceWorker.ready.then(r=>r.showNotification(t,{body:b,icon:'icons/icon-192.png'})); } else new Notification(t,{body:b}); }catch(e){} };
+  if(new Date().getDay()===1 && weights[mondayKey()]==null){ notify('GymBro','Time for your Monday weigh-in ⚖️'); localStorage.setItem(flag,'1'); return; }
+  const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
+  if(days.length){ const diff=(Date.now()-new Date(days[days.length-1]+'T00:00:00').getTime())/86400000; if(diff>=3){ notify('GymBro','It\'s been '+Math.floor(diff)+' days — time to train? 🏋️'); localStorage.setItem(flag,'1'); } }
+}
 document.getElementById('glowToggle').onclick=()=>{ reduceGlow=!reduceGlow; DB.set('reduceGlow',reduceGlow); applyGlow(); renderSettings(); };
 document.getElementById('hapticToggle').onclick=()=>{ haptics=!haptics; DB.set('haptics',haptics); renderSettings(); if(haptics) buzz(20); };
 document.getElementById('soundToggle').onclick=()=>{ sound=!sound; DB.set('sound',sound); renderSettings(); if(sound) beep(700,0.12); };
@@ -1046,19 +1063,27 @@ function weeklyStreak(){
   while(workoutsInWeek(prev)>=weeklyGoal){ streak++; prev.setDate(prev.getDate()-7); }
   return streak;
 }
+function weekVolume(mon){ let v=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d); if(exercises[k]) v+=exercises[k].reduce((s,it)=>s+vol(it),0); } return v; }
+let goalMetric=0; const GOAL_METRICS=['workouts','volume','shakes'];
 function renderWeeklyGoal(){
-  const box=document.getElementById('goalwBox');
-  const done=workoutsInWeek(mondayOf());
-  const pct=Math.max(0,Math.min(1, weeklyGoal>0?done/weeklyGoal:0));
-  const r=28, c=2*Math.PI*r, off=c*(1-pct), streak=weeklyStreak();
+  const box=document.getElementById('goalwBox'); const mon=mondayOf();
+  let done,target,center,sub,streakLine='';
+  const m=GOAL_METRICS[goalMetric];
+  if(m==='workouts'){ done=workoutsInWeek(mon); target=weeklyGoal; center=done; sub='workouts this week'; const s=weeklyStreak(); streakLine=s>0?'🔥 '+s+'-week streak':''; }
+  else if(m==='volume'){ done=Math.round(weekVolume(mon)); let vs=[]; for(let i=1;i<=4;i++){ const mm=new Date(mon); mm.setDate(mon.getDate()-7*i); vs.push(weekVolume(mm)); } target=Math.max(1,Math.round(vs.reduce((a,b)=>a+b,0)/vs.length)); center=fmtNum(done); sub='kg this week'; }
+  else { done=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); if(shakes[todayKey(d)]) done++; } target=7; center=done; sub='shakes this week'; }
+  const pct=Math.max(0,Math.min(1, target>0?done/target:0));
+  const r=28, c=2*Math.PI*r, off=c*(1-pct);
   const ring='<svg class="ring" viewBox="0 0 72 72">'
     +'<circle class="rbg" cx="36" cy="36" r="'+r+'"/>'
     +'<circle class="rfg" cx="36" cy="36" r="'+r+'" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'
-    +'<text class="rtxt" x="36" y="43" text-anchor="middle">'+done+'</text></svg>';
-  const info='<div class="goalw-info"><div class="goalw-count"><b>'+done+'</b> / '+weeklyGoal+'</div>'
-    +'<div class="goalw-sub">workouts this week</div>'
-    +'<div class="goalw-streak">'+(streak>0?'🔥 '+streak+'-week streak':'')+'</div></div>';
+    +'<text class="rtxt" x="36" y="43" text-anchor="middle">'+(m==='volume'?'':done)+'</text></svg>';
+  const info='<div class="goalw-info"><div class="goalw-count"><b>'+center+'</b> / '+fmtNum(target)+'</div>'
+    +'<div class="goalw-sub">'+sub+'</div>'
+    +'<div class="goalw-streak">'+(streakLine||'tap to switch')+'</div></div>';
   box.innerHTML=ring+info;
+  box.style.cursor='pointer';
+  box.onclick=()=>{ goalMetric=(goalMetric+1)%GOAL_METRICS.length; renderWeeklyGoal(); };
 }
 
 const exNameEl=document.getElementById('exName'), exWeightEl=document.getElementById('exWeight'),
@@ -1198,10 +1223,12 @@ document.getElementById('exModalClose').onclick=()=>document.getElementById('exM
 document.getElementById('exModal').onclick=e=>{ if(e.target.id==='exModal') document.getElementById('exModal').hidden=true; };
 
 /* weight */
+let weightTf=0; const WEIGHT_TFS=[['all','All time'],['8w','Last 8 weigh-ins']];
 function renderWeightChart(){
   const box=document.getElementById('weightChart');
-  const keys=Object.keys(weights).sort();
+  let keys=Object.keys(weights).sort();
   if(!keys.length){ box.innerHTML='<div class="empty">Log a weigh-in to see your graph.</div>'; return; }
+  if(WEIGHT_TFS[weightTf][0]==='8w') keys=keys.slice(-8);
   const vals=keys.map(k=>weights[k]);
   const lo=Math.min(...vals, goal), hi=Math.max(...vals, goal);   // include goal so its line shows
   const center=(lo+hi)/2;
@@ -1223,7 +1250,10 @@ function renderWeightChart(){
   if(goal>=yMin && goal<=yMax){ const gy=+Y(goal).toFixed(1);
     goalLine='<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" class="cgoal"/>'
       +'<text x="'+(W-padR)+'" y="'+(gy-4)+'" class="cl" text-anchor="end" fill="var(--neon2)">goal '+fmtDec(goal)+'</text>'; }
-  box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+goalLine+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>';
+  box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+goalLine+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>'
+    +'<div class="hint" style="text-align:center;margin-top:6px">'+WEIGHT_TFS[weightTf][1]+' · tap to change</div>';
+  box.style.cursor='pointer';
+  box.onclick=()=>{ weightTf=(weightTf+1)%WEIGHT_TFS.length; renderWeightChart(); };
 }
 
 function openDayDetail(k){
@@ -1642,12 +1672,38 @@ function renderSuggest(){
     DB.set('exercises',exercises); updateExNames(); renderExercises(); renderWeeklyGoal(); renderSuggest(); buzz(15); showToast('Session added ✓');
   };
 }
+const STANDARDS={'bench press':[0.5,0.75,1.0,1.5,2.0],'squat':[0.75,1.25,1.5,2.25,2.75],'deadlift':[1.0,1.5,2.0,2.5,3.0],'overhead press':[0.35,0.55,0.8,1.1,1.4],'barbell row':[0.5,0.75,1.0,1.4,1.8],'incline press':[0.4,0.65,0.9,1.3,1.7]};
+const TIERS=['Untrained','Beginner','Novice','Intermediate','Advanced','Elite'];
+function renderStandards(){
+  const box=document.getElementById('statStandards'); if(!box) return;
+  const wk=Object.keys(weights).sort(); const bw=wk.length?weights[wk[wk.length-1]]:null;
+  if(!bw){ box.innerHTML='<div class="empty">Log a body weight to see strength standards.</div>'; return; }
+  const rows=[];
+  Object.keys(STANDARDS).forEach(key=>{ let best=0; Object.values(exercises).forEach(a=>a.forEach(it=>{ if(norm(it.name)===key && it.weight!=null){ const e=e1rm(it); if(e>best)best=e; } }));
+    if(best<=0) return; const ratio=best/bw; const th=STANDARDS[key]; let tier=0; th.forEach(t=>{ if(ratio>=t) tier++; }); rows.push({name:key,best,ratio,tier}); });
+  if(!rows.length){ box.innerHTML='<div class="empty">Log a main lift (bench, squat, deadlift…).</div>'; return; }
+  box.innerHTML='<div class="hint" style="margin:0 0 8px">vs body weight '+fmtDec(bw)+' kg · est. 1RM</div>'
+    +rows.map(r=>'<div class="weekrow"><span class="muted" style="text-transform:capitalize">'+r.name+'</span><span class="kg">'+fmtNum(r.best)+' kg · <b>'+TIERS[r.tier]+'</b> ('+fmtDec(r.ratio)+'×)</span></div>').join('');
+}
+function renderProjections(){
+  const box=document.getElementById('statProj'); if(!box) return; const byName={};
+  Object.keys(exercises).sort().forEach(k=>{ const t=new Date(k+'T00:00:00').getTime()/(1000*60*60*24*7); exercises[k].forEach(it=>{ if(it.weight==null) return; (byName[it.name]=byName[it.name]||[]).push([t,it.weight]); }); });
+  const rows=[];
+  Object.keys(byName).forEach(n=>{ const pts=byName[n]; if(pts.length<3) return; let sx=0,sy=0,sxy=0,sxx=0,N=pts.length; pts.forEach(p=>{sx+=p[0];sy+=p[1];sxy+=p[0]*p[1];sxx+=p[0]*p[0];}); const den=N*sxx-sx*sx; if(!den) return; const slope=(N*sxy-sx*sy)/den; if(slope<=0.05) return;
+    const best=Math.max(...pts.map(p=>p[1])); const target=Math.ceil((best+0.1)/5)*5; const weeks=Math.ceil((target-best)/slope);
+    if(weeks>0 && weeks<=104) rows.push({name:n,target,weeks}); });
+  rows.sort((a,b)=>a.weeks-b.weeks);
+  if(!rows.length){ box.innerHTML='<div class="empty">Keep logging — projections need a rising trend.</div>'; return; }
+  box.innerHTML=rows.slice(0,6).map(r=>'<div class="weekrow"><span class="muted">'+r.name+' → '+fmtDec(r.target)+' kg</span><span class="kg">~'+r.weeks+' wk</span></div>').join('');
+}
 function renderStats(){
   applyDash();
   renderWeekSummary();
   renderVolumeTrend();
   renderMusclePie();
   renderInsights();
+  renderStandards();
+  renderProjections();
   renderHeatmap();
   renderAchievements();
 }
@@ -1682,16 +1738,16 @@ document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true;
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false;
   groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
   applyGlow(); rebuildGroups();
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,theme,groups:groupCfg,dash};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1740,10 +1796,11 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.haptics==='boolean') haptics=d.haptics;
       if(typeof d.sound==='boolean') sound=d.sound;
       if(typeof d.snapConfetti==='boolean') snapConfetti=d.snapConfetti;
+      if(typeof d.reminders==='boolean') reminders=d.reminders;
       if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
       if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
       if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
       applyTheme(); applyGlow(); rebuildGroups();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner();
       showToast('Backup imported ✓');
@@ -1754,6 +1811,7 @@ document.getElementById('importFile').onchange=e=>{
 };
 
 updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay(); renderSnapshot(true);
+setTimeout(checkReminders,1500);
 
 /* service worker + auto-update */
 if('serviceWorker' in navigator){
