@@ -452,6 +452,7 @@
         <input id="exMins" type="number" inputmode="decimal" placeholder="min" step="1" min="0">
       </div>
       <button id="exAdd" style="width:100%;margin-top:10px">Add exercise</button>
+      <button id="quickBtn" class="ghost" style="width:100%;margin-top:8px">⚡ Quick log (no details)</button>
       <button id="repeatBtn" class="ghost" style="width:100%;margin-top:8px">↻ Repeat last workout</button>
     </div>
 
@@ -569,7 +570,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.40.2</div>
+    <div class="ver-foot" id="verLabel">v1.41.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -635,7 +636,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.40.2';
+const APP_VERSION='1.41.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1222,6 +1223,20 @@ document.getElementById('exAdd').onclick=()=>{
   updateExNames(); renderExercises(); renderWeeklyGoal();
 };
 exRepsEl.addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('exAdd').click(); });
+
+/* quick log — a detail-less day tag, e.g. "Kettlebell day" */
+document.getElementById('quickBtn').onclick=()=>{
+  let name=exNameEl.value.trim();
+  if(!name){ const p=prompt('Quick log — what did you do?','Kettlebell'); if(p==null) return; name=p.trim(); }
+  if(!name) return;
+  const group=exGroupEl.value||null;
+  const k=logDate();
+  (exercises[k]=exercises[k]||[]).push({name,weight:null,sets:null,reps:null,group,dist:null,mins:null});
+  DB.set('exercises',exercises); buzz(12);
+  exNameEl.value=''; exGroupEl.value=''; updateExFields();
+  updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal();
+  showToast(name+' logged ✓');
+};
 
 /* repeat last workout */
 function repeatLastWorkout(){
