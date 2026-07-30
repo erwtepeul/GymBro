@@ -82,11 +82,11 @@ test('vol treats missing weight as 0, missing reps/sets as 1', ()=>{
   eq(F.vol({}), 0);
   eq(F.vol({weight:50}), 50);
 });
-test('e1rm uses Epley w×(1+reps/30) and grows with reps', ()=>{
-  // NOTE: Epley slightly overestimates at 1 rep (1.033×) — a known quirk we accept.
-  ok(approx(F.e1rm({weight:100,reps:1}), 103.333), '100×1 ≈ 103.3');
-  ok(approx(F.e1rm({weight:100,reps:5}), 116.667), '100×5 ≈ 116.7');
+test('e1rm uses Brzycki w×36/(37−reps), exact at 1 rep, capped at 12 reps', ()=>{
+  eq(F.e1rm({weight:100,reps:1}), 100);                       // exact bodyweight at 1 rep
+  ok(approx(F.e1rm({weight:100,reps:5}), 112.5), '100×5 ≈ 112.5');
   ok(F.e1rm({weight:100,reps:5}) > F.e1rm({weight:100,reps:1}), 'more reps → higher e1rm');
+  eq(F.e1rm({weight:100,reps:20}), F.e1rm({weight:100,reps:12}), 'reps capped at 12 (no runaway)');
   eq(F.e1rm({weight:null}), null);
 });
 

@@ -112,6 +112,12 @@
     background:var(--neon);color:#04120a;box-shadow:var(--glow);transition:.12s;
   }
   button:active{transform:scale(.97)}
+  /* tactile press feedback on tappable cards & cells */
+  #goalwBox,#statPie,#statTrend,#weightChart{transition:transform .1s ease}
+  #goalwBox:active,#statPie:active,#statTrend:active,#weightChart:active{transform:scale(.99)}
+  .cal-cell[data-k]{transition:transform .08s ease}
+  .cal-cell[data-k]:active{transform:scale(.9)}
+  .wedit:active,.link:active{opacity:1;transform:scale(.9)}
   button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none;text-transform:none;letter-spacing:0}
 
   .big-num{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--neon2);text-shadow:var(--glow-cy)}
@@ -567,7 +573,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.45.0</div>
+    <div class="ver-foot" id="verLabel">v1.46.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -633,7 +639,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.45.0';
+const APP_VERSION='1.46.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -988,7 +994,7 @@ function lastEntryFor(name){ let e=null; Object.keys(exercises).sort().forEach(d
 /* training volume of a single entry = weight × reps × sets (legacy weight-only = weight) */
 function vol(it){ return (it.weight!=null?it.weight:0)*(it.reps||1)*(it.sets||1); }
 /* estimated 1-rep max (Epley) */
-function e1rm(it){ if(it.weight==null) return null; return it.weight*(1+(it.reps||1)/30); }
+function e1rm(it){ if(it.weight==null) return null; const reps=Math.min(Math.max(it.reps||1,1),12); return it.weight*36/(37-reps); } // Brzycki, reps capped at 12 (estimates diverge beyond)
 /* display string for an entry, e.g. "3×5 · 60 kg" */
 function fmtEntry(it){
   if(it.dist!=null || it.mins!=null){
@@ -1137,11 +1143,14 @@ function renderMomentum(){
   const nowV=volWin(7,0), ghostV=volWin(7,28);
   let pct=ghostV>0?Math.round((nowV-ghostV)/ghostV*100):(nowV>0?100:0);
   const ahead=nowV>=ghostV;
-  const ghostTxt = (ghostV<=0&&nowV<=0) ? '<span style="color:var(--muted)">🏃 No ghost to race yet</span>'
-    : (ahead ? '<span style="color:var(--neon2)">🏃 <b>'+Math.abs(pct)+'% ahead</b> of last month’s self</span>'
-             : '<span style="color:var(--danger)">🐢 <b>'+Math.abs(pct)+'% behind</b> last month’s self</span>');
   const mon=mondayOf(); const cur=[],gh=[];
   for(let i=3;i>=0;i--){ const c=new Date(mon); c.setDate(mon.getDate()-7*i); cur.push(weekVolume(c)); const g=new Date(mon); g.setDate(mon.getDate()-7*(i+4)); gh.push(weekVolume(g)); }
+  const recovering = cur[3]>cur[2] && cur[2]>=0;   // this week's volume rising vs last week
+  let ghostTxt;
+  if(ghostV<=0 && nowV<=0){ ghostTxt='<span style="color:var(--muted)">🏁 No ghost to race yet — log a workout to start.</span>'; }
+  else if(ahead){ ghostTxt='<span style="color:var(--neon2)">🏃 <b>'+Math.abs(pct)+'% ahead</b> of last month’s self</span>'; }
+  else if(recovering){ ghostTxt='<span style="color:var(--neon2)">📈 <b>Bouncing back</b> — up on last week</span>'; }
+  else { ghostTxt='<span style="color:var(--muted)">🌱 <b>'+Math.abs(pct)+'% under</b> last month — every rep counts</span>'; }
   box.innerHTML='<div class="momo"><div class="momo-score"><b>'+M.score+'</b><span>/ 100</span></div>'
     +'<div class="momo-meta"><div class="momo-lvl">'+emo+' '+lvl+'</div>'
     +'<div class="momo-bar"><i style="width:'+M.score+'%"></i></div>'
@@ -1168,7 +1177,7 @@ function renderWeeklyGoal(){
     +'<div class="goalw-streak">'+(streakLine||'tap to switch')+'</div></div>';
   box.innerHTML=ring+info;
   box.style.cursor='pointer';
-  box.onclick=()=>{ goalMetric=(goalMetric+1)%GOAL_METRICS.length; DB.set('goalMetric',goalMetric); renderWeeklyGoal(); };
+  box.onclick=()=>{ buzz(6); goalMetric=(goalMetric+1)%GOAL_METRICS.length; DB.set('goalMetric',goalMetric); renderWeeklyGoal(); };
   renderMomentum();
 }
 
@@ -1335,7 +1344,7 @@ function renderWeightChart(){
   box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="chart"><path d="'+area+'" class="carea"/>'+grid+labels+goalLine+'<path d="'+line+'" class="cline"/>'+dots+xlabels+'</svg>'
     +'<div class="hint" style="text-align:center;margin-top:6px">'+WEIGHT_TFS[weightTf][1]+' · tap to change</div>';
   box.style.cursor='pointer';
-  box.onclick=()=>{ weightTf=(weightTf+1)%WEIGHT_TFS.length; DB.set('weightTf',weightTf); renderWeightChart(); };
+  box.onclick=()=>{ buzz(6); weightTf=(weightTf+1)%WEIGHT_TFS.length; DB.set('weightTf',weightTf); renderWeightChart(); };
 }
 
 function openDayDetail(k){
@@ -1370,7 +1379,7 @@ function renderCalendar(){
     h+='<div class="cal-cell'+(done?' done':'')+(kb?' kb':'')+(k===tK?' today':'')+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+(kb?'<span class="kb-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
-  box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>openDayDetail(el.getAttribute('data-k')));
+  box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>{ buzz(6); openDayDetail(el.getAttribute('data-k')); });
   document.getElementById('calPrev').onclick=()=>{ calRef.setMonth(calRef.getMonth()-1); renderCalendar(); };
   document.getElementById('calNext').onclick=()=>{ if(atCurrent)return; calRef.setMonth(calRef.getMonth()+1); renderCalendar(); };
 }
@@ -1489,7 +1498,7 @@ function renderVolumeTrend(){
     pts.push({label:todayKey(mon), value:val}); mon=new Date(mon); mon.setDate(mon.getDate()+7); }
   box.innerHTML=(miniChart(pts.slice(-12))||'<div class="empty">Not enough data yet.</div>')+'<div class="hint" style="text-align:center;margin-top:6px">'+mlabel+' · tap to change</div>';
   box.style.cursor='pointer';
-  box.onclick=()=>{ trendMetric=(trendMetric+1)%TREND_METRICS.length; DB.set('trendMetric',trendMetric); renderVolumeTrend(); };
+  box.onclick=()=>{ buzz(6); trendMetric=(trendMetric+1)%TREND_METRICS.length; DB.set('trendMetric',trendMetric); renderVolumeTrend(); };
 }
 let pieMetric=DB.get('pieMetric',0); const PIE_METRICS=[['count','By sets'],['volume','By volume'],['days','By sessions']];
 function renderMusclePie(){
@@ -1519,7 +1528,7 @@ function renderMusclePie(){
   const legend='<div class="legend">'+order.map(g=>'<div class="lg"><span class="dot" style="background:'+COL[g]+'"></span>'+g+' <b>'+Math.round(vals[g]/total*100)+'%</b></div>').join('')+'</div>';
   box.innerHTML='<div class="pie-wrap">'+svg+legend+'</div><div class="hint" style="text-align:center;margin-top:10px">'+mlabel+' · tap to change</div>';
   box.style.cursor='pointer';
-  box.onclick=()=>{ pieMetric=(pieMetric+1)%PIE_METRICS.length; DB.set('pieMetric',pieMetric); renderMusclePie(); };
+  box.onclick=()=>{ buzz(6); pieMetric=(pieMetric+1)%PIE_METRICS.length; DB.set('pieMetric',pieMetric); renderMusclePie(); };
 }
 function renderHeatmap(){
   const box=document.getElementById('statHeat');
@@ -1787,7 +1796,7 @@ function renderStats(){
   renderAchievements();
 }
 function deleteLogEntry(day,i){
-  const arr=exercises[day]; if(!arr) return; const removed=arr[i]; arr.splice(i,1); if(!arr.length) delete exercises[day];
+  const arr=exercises[day]; if(!arr) return; buzz(12); const removed=arr[i]; arr.splice(i,1); if(!arr.length) delete exercises[day];
   DB.set('exercises',exercises); updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal();
   showToast('Deleted '+removed.name, ()=>{ const a=exercises[day]||(exercises[day]=[]); a.splice(Math.min(i,a.length),0,removed); DB.set('exercises',exercises); updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal(); });
 }
