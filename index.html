@@ -26,17 +26,11 @@
     --glow-cy:0 0 12px rgba(255,210,63,.5), 0 0 26px rgba(255,210,63,.2);
     --ga:rgba(255,122,26,.10); --gb:rgba(255,59,107,.08); --focus:rgba(255,122,26,.15);
   }
-  html[data-theme="grape"]{
-    --neon:#a855f7; --neon2:#22d3ee;
-    --glow:0 0 12px rgba(168,85,247,.55), 0 0 26px rgba(168,85,247,.25);
-    --glow-cy:0 0 12px rgba(34,211,238,.5), 0 0 26px rgba(34,211,238,.2);
-    --ga:rgba(168,85,247,.12); --gb:rgba(34,211,238,.08); --focus:rgba(168,85,247,.15);
-  }
   html[data-theme="night"]{
-    --neon:#e6e6ea; --neon2:#9aa0aa;
-    --glow:0 0 2px rgba(255,255,255,.15);
-    --glow-cy:0 0 2px rgba(255,255,255,.10);
-    --ga:rgba(255,255,255,.04); --gb:rgba(255,255,255,.03); --focus:rgba(255,255,255,.12);
+    --neon:#c8a46a; --neon2:#8fb0b6;
+    --glow:0 0 4px rgba(200,164,106,.30);
+    --glow-cy:0 0 4px rgba(143,176,182,.28);
+    --ga:rgba(200,164,106,.05); --gb:rgba(143,176,182,.04); --focus:rgba(200,164,106,.10);
   }
   html[data-theme="ocean"]{
     --neon:#0ea5e9; --neon2:#2dd4bf;
@@ -297,8 +291,6 @@
   .goalw-count b{color:var(--neon2)}
   .goalw-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:2px}
   .goalw-streak{font-size:12px;font-weight:800;color:var(--neon2);margin-top:6px;text-transform:uppercase;letter-spacing:1px}
-  html[data-theme="night"] .goalw-count b{color:#00f0ff}
-  html[data-theme="night"] .goalw-streak{color:#00f0ff}
   .goalw-info{display:flex;flex-direction:column;justify-content:center}
   .goalw .ghost{padding:8px 14px;font-size:13px;flex:0 0 auto}
   .momo{display:flex;align-items:center;gap:16px}
@@ -575,7 +567,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.44.1</div>
+    <div class="ver-foot" id="verLabel">v1.45.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -641,7 +633,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.44.1';
+const APP_VERSION='1.45.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -686,7 +678,7 @@ let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 /* theme */
-const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'grape',name:'Grape',a:'#a855f7',b:'#22d3ee'},{id:'night',name:'Night',a:'#e6e6ea',b:'#9aa0aa'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'aurora',name:'Aurora',a:'#2dd4bf',b:'#a78bfa'},{id:'lime',name:'Lime',a:'#b6ff3d',b:'#00e6c3'},{id:'mint',name:'Mint',a:'#3ef0a0',b:'#5ad1ff'}];
+const THEMES=[{id:'neon',name:'Neon',a:'#39ff14',b:'#00f0ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'night',name:'Night',a:'#c8a46a',b:'#8fb0b6'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'aurora',name:'Aurora',a:'#2dd4bf',b:'#a78bfa'},{id:'lime',name:'Lime',a:'#b6ff3d',b:'#00e6c3'},{id:'mint',name:'Mint',a:'#3ef0a0',b:'#5ad1ff'}];
 if(!THEMES.some(t=>t.id===theme)){ theme='neon'; DB.set('theme',theme); }
 function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
 applyTheme();
@@ -1167,14 +1159,10 @@ function renderWeeklyGoal(){
   else { done=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); if(shakes[todayKey(d)]) done++; } target=7; center=done; sub='shakes this week'; }
   const pct=Math.max(0,Math.min(1, target>0?done/target:0));
   const r=28, c=2*Math.PI*r, off=c*(1-pct);
-  const mono = theme==='night';
-  const grad = mono ? '<defs><linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#39ff14"/><stop offset=".5" stop-color="#00f0ff"/><stop offset="1" stop-color="#b46bff"/></linearGradient></defs>' : '';
-  const rfgStyle = mono ? ' style="stroke:url(#goalGrad);filter:drop-shadow(0 0 4px rgba(0,240,255,.6))"' : '';
-  const rtxtStyle = mono ? ' style="fill:#00f0ff"' : '';
-  const ring='<svg class="ring" viewBox="0 0 72 72">'+grad
+  const ring='<svg class="ring" viewBox="0 0 72 72">'
     +'<circle class="rbg" cx="36" cy="36" r="'+r+'"/>'
-    +'<circle class="rfg" cx="36" cy="36" r="'+r+'"'+rfgStyle+' stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'
-    +'<text class="rtxt" x="36" y="43" text-anchor="middle"'+rtxtStyle+'>'+(m==='volume'?'':done)+'</text></svg>';
+    +'<circle class="rfg" cx="36" cy="36" r="'+r+'" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'
+    +'<text class="rtxt" x="36" y="43" text-anchor="middle">'+(m==='volume'?'':done)+'</text></svg>';
   const info='<div class="goalw-info"><div class="goalw-count"><b>'+center+'</b> / '+fmtNum(target)+'</div>'
     +'<div class="goalw-sub">'+sub+'</div>'
     +'<div class="goalw-streak">'+(streakLine||'tap to switch')+'</div></div>';
@@ -1709,7 +1697,7 @@ function renderBodyMap(){
   const ym=todayKey().slice(0,7); const gv={}; GROUPS.forEach(g=>gv[g]=0);
   Object.keys(exercises).forEach(k=>{ if(k.slice(0,7)!==ym) return; exercises[k].forEach(it=>{ if(it.group!=null) gv[it.group]=(gv[it.group]||0)+vol(it); }); });
   const vals=Object.values(gv).filter(v=>v>0); const max=vals.length?Math.max(...vals):1;
-  const COL=theme==='night'?GROUP_GREYS:GROUP_COLORS;
+  const COL=GROUP_COLORS;
   const reg=(g,shape)=>{ const has=gv[g]>0; const base=COL[g]||'#888'; const fill=has?base:'var(--bg2)'; const op=has?(0.3+0.7*Math.min(1,gv[g]/max)):1;
     return shape.replace(/@@/g,'fill="'+fill+'" fill-opacity="'+op+'" stroke="var(--line)" stroke-width="1" data-group="'+g+'"'); };
   const svg='<svg viewBox="0 0 300 290">'
