@@ -113,11 +113,11 @@
   }
   button:active{transform:scale(.97)}
   /* tactile press feedback on tappable cards & cells */
-  #goalwBox,#statPie,#statTrend,#weightChart{transition:transform .1s ease}
-  #goalwBox:active,#statPie:active,#statTrend:active,#weightChart:active{transform:scale(.99)}
-  .cal-cell[data-k]{transition:transform .08s ease}
-  .cal-cell[data-k]:active{transform:scale(.9)}
-  .wedit:active,.link:active{opacity:1;transform:scale(.9)}
+  #goalwBox,#statPie,#statTrend,#weightChart{transition:transform .12s cubic-bezier(.34,1.56,.64,1)}
+  #goalwBox:active,#statPie:active,#statTrend:active,#weightChart:active{transform:scale(.93)}
+  .cal-cell[data-k]{transition:transform .1s cubic-bezier(.34,1.56,.64,1)}
+  .cal-cell[data-k]:active{transform:scale(.82)}
+  .wedit:active,.link:active{opacity:1;transform:scale(.85)}
   button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none;text-transform:none;letter-spacing:0}
 
   .big-num{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--neon2);text-shadow:var(--glow-cy)}
@@ -370,7 +370,9 @@
     width:56px;height:56px;padding:0;border-radius:50%;background:var(--neon);color:#04120a;box-shadow:var(--glow);
     display:flex;align-items:center;justify-content:center;border:none}
   #fab:active{transform:translateX(-50%) scale(.94)}
-  html[data-theme="night"] #fab{background:var(--neon2);box-shadow:var(--glow-cy)}
+  html[data-theme="night"] #fab{background:var(--fab,#8fb0b6);box-shadow:0 0 16px -4px var(--fab,#8fb0b6)}
+  .fabsw{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;box-shadow:none;margin-left:6px}
+  .fabsw.active{border-color:var(--ink)}
   #fab svg{width:26px;height:26px}
   .hgear{position:absolute;top:26px;right:14px;width:36px;height:36px;padding:0;background:transparent;color:var(--muted);
     border:none;box-shadow:none;display:flex;align-items:center;justify-content:center}
@@ -533,6 +535,7 @@
       <div class="set-row"><span>🎉 Today confetti</span><span class="val"><b id="setConfetti">On</b><button id="confettiToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>🔔 Reminders</span><span class="val"><b id="setRemind">Off</b><button id="remindToggle" class="ghost">Toggle</button></span></div>
       <div class="set-row"><span>📋 Today's exercises</span><span class="val"><b id="setTodayEx">On</b><button id="todayExToggle" class="ghost">Toggle</button></span></div>
+      <div class="set-row"><span>➕ Add button (Night)</span><span class="val" id="fabSwatches"></span></div>
     </div>
 
     <h2>Goals</h2>
@@ -574,7 +577,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.46.1</div>
+    <div class="ver-foot" id="verLabel">v1.47.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -640,7 +643,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.46.1';
+const APP_VERSION='1.47.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -679,6 +682,14 @@ let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
 let reminders=DB.get('reminders',false);     // opt-in reminder notifications
 let showTodayEx=DB.get('showTodayEx',true);  // show Today's Exercises on home
 function applyHomeToggles(){ const el=document.getElementById('homeTodayEx'); if(el) el.style.display=showTodayEx?'':'none'; }
+const FAB_COLORS={teal:'#8fb0b6',coral:'#ff6f61',violet:'#9b7bff',aqua:'#2fd8c4'}; // Night-theme add button
+let fabColor=DB.get('fabColor','teal'); if(!FAB_COLORS[fabColor]) fabColor='teal';
+function applyFab(){ document.documentElement.style.setProperty('--fab', FAB_COLORS[fabColor]); }
+function renderFabSwatches(){
+  const box=document.getElementById('fabSwatches'); if(!box) return;
+  box.innerHTML=Object.keys(FAB_COLORS).map(k=>'<button class="fabsw'+(k===fabColor?' active':'')+'" data-c="'+k+'" style="background:'+FAB_COLORS[k]+'" aria-label="'+k+'"></button>').join('');
+  box.querySelectorAll('.fabsw').forEach(b=>b.onclick=()=>{ fabColor=b.dataset.c; DB.set('fabColor',fabColor); applyFab(); renderFabSwatches(); buzz(6); });
+}
 function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
@@ -853,6 +864,7 @@ function renderSettings(){
   document.getElementById('setConfetti').textContent=snapConfetti?'On':'Off';
   document.getElementById('setRemind').textContent=reminders?'On':'Off';
   document.getElementById('setTodayEx').textContent=showTodayEx?'On':'Off';
+  renderFabSwatches();
   document.getElementById('setBackup').textContent=backupDays>0?(backupDays+' day'+(backupDays>1?'s':'')):'Off';
   renderBackupStatus();
 }
@@ -1840,16 +1852,16 @@ document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false; showTodayEx=true;
+  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false; showTodayEx=true; fabColor='teal';
   groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('fabColor',fabColor); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
   applyGlow(); rebuildGroups();
-  updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles();
+  updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles(); applyFab();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,theme,groups:groupCfg,dash};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,fabColor,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -1998,12 +2010,13 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.snapConfetti==='boolean') snapConfetti=d.snapConfetti;
       if(typeof d.reminders==='boolean') reminders=d.reminders;
       if(typeof d.showTodayEx==='boolean') showTodayEx=d.showTodayEx;
+      if(typeof d.fabColor==='string' && FAB_COLORS[d.fabColor]) fabColor=d.fabColor;
       if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
       if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
       if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('fabColor',fabColor); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
       applyTheme(); applyGlow(); rebuildGroups();
-      updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles();
+      updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles(); applyFab();
       showToast('Backup imported ✓');
     }catch(err){ alert('Could not read that backup file.'); }
     e.target.value='';
@@ -2013,6 +2026,7 @@ document.getElementById('importFile').onchange=e=>{
 
 updateExNames(); renderShake(); renderExercises(); renderWeeklyGoal(); updateBackupBanner(); renderOnThisDay(); renderSnapshot(true);
 applyHomeToggles();
+applyFab();
 initBackup();
 setTimeout(checkReminders,1500);
 
