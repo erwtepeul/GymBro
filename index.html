@@ -370,6 +370,7 @@
     width:56px;height:56px;padding:0;border-radius:50%;background:var(--neon);color:#04120a;box-shadow:var(--glow);
     display:flex;align-items:center;justify-content:center;border:none}
   #fab:active{transform:translateX(-50%) scale(.94)}
+  html[data-theme="night"] #fab{background:var(--neon2);box-shadow:var(--glow-cy)}
   #fab svg{width:26px;height:26px}
   .hgear{position:absolute;top:26px;right:14px;width:36px;height:36px;padding:0;background:transparent;color:var(--muted);
     border:none;box-shadow:none;display:flex;align-items:center;justify-content:center}
@@ -573,7 +574,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.46.0</div>
+    <div class="ver-foot" id="verLabel">v1.46.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -639,7 +640,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.46.0';
+const APP_VERSION='1.46.1';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
