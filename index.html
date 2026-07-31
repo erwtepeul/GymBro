@@ -577,7 +577,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.47.1</div>
+    <div class="ver-foot" id="verLabel">v1.47.2</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -643,7 +643,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.47.1';
+const APP_VERSION='1.47.2';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -682,7 +682,7 @@ let snapConfetti=DB.get('snapConfetti',true); // confetti on the Today snapshot
 let reminders=DB.get('reminders',false);     // opt-in reminder notifications
 let showTodayEx=DB.get('showTodayEx',true);  // show Today's Exercises on home
 function applyHomeToggles(){ const el=document.getElementById('homeTodayEx'); if(el) el.style.display=showTodayEx?'':'none'; }
-const FAB_COLORS={teal:'#8fb0b6',coral:'#ff6f61',violet:'#9b7bff',aqua:'#2fd8c4'}; // Night-theme add button
+const FAB_COLORS={teal:'#8fb0b6',coral:'#e0685c',violet:'#8a6fe0',aqua:'#33bfb0'}; // Night-theme add button
 let fabColor=DB.get('fabColor','teal'); if(!FAB_COLORS[fabColor]) fabColor='teal';
 function applyFab(){ document.documentElement.style.setProperty('--fab', FAB_COLORS[fabColor]); }
 function renderFabSwatches(){
