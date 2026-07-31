@@ -202,9 +202,10 @@
   .cal-n{position:relative;z-index:2}
   .kb-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64%;height:64%;
     border:2px solid #b46bff;border-radius:50%;box-shadow:0 0 6px rgba(180,107,255,.55);z-index:1;pointer-events:none}
-  .cal-cell.kb:not(.done){border-color:#b46bff}
+  .cal-cell.kbonly{border-color:#b46bff;color:#b46bff;box-shadow:0 0 8px rgba(180,107,255,.5),0 0 18px rgba(180,107,255,.22)}
   .cal-cell.today{color:var(--neon2)}
   .cal-cell.today.done{color:#ffb020}
+  .cal-cell.today.kbonly{color:#b46bff}
   .cal-cell[data-k]{cursor:pointer}
 
   .danger-btn{margin-top:22px;width:100%;background:transparent;color:var(--danger);
@@ -577,7 +578,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.47.2</div>
+    <div class="ver-foot" id="verLabel">v1.48.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -643,7 +644,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.47.2';
+const APP_VERSION='1.48.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1386,10 +1387,13 @@ function renderCalendar(){
   for(let i=0;i<startDay;i++) h+='<div class="cal-cell"></div>';
   for(let d=1;d<=days;d++){
     const k=todayKey(new Date(year,month,d));
-    const done=exercises[k]&&exercises[k].length;
-    const kb=isKettlebellDay(k);
+    const arr=exercises[k]||[];
+    const done=arr.length>0;
+    const kbOnly=done && arr.every(it=>norm(it.name).includes('kettlebell'));
+    const kbMixed=!kbOnly && arr.some(it=>norm(it.name).includes('kettlebell'));
     const shk=!!shakes[k];
-    h+='<div class="cal-cell'+(done?' done':'')+(kb?' kb':'')+(k===tK?' today':'')+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+(kb?'<span class="kb-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+'</div>';
+    let cls='cal-cell'+(kbOnly?' kbonly':(done?' done':''))+(kbMixed?' kb':'')+(k===tK?' today':'');
+    h+='<div class="'+cls+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+(kbMixed?'<span class="kb-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
   box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>{ buzz(6); openDayDetail(el.getAttribute('data-k')); });
