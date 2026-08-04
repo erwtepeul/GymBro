@@ -584,7 +584,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.49.1</div>
+    <div class="ver-foot" id="verLabel">v1.49.2</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -650,7 +650,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.49.1';
+const APP_VERSION='1.49.2';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1079,20 +1079,12 @@ function renderOnThisDay(){
   el.querySelectorAll('.otd-add').forEach((b,i)=>b.onclick=()=>addToToday(arr[i]));
 }
 function addToToday(src){
-  buzz(6);
-  showView('add');
-  const cardio = (src.group==='Cardio');
-  exDateEl.value=todayKey();
-  exNameEl.value=src.name;
-  exGroupEl.value=src.group||'';
-  updateExFields();
-  exWeightEl.value=(!cardio && src.weight!=null)?src.weight:'';
-  exSetsEl.value=(!cardio && src.sets!=null)?src.sets:'';
-  exRepsEl.value=(!cardio && src.reps!=null)?src.reps:'';
-  exDistEl.value=(cardio && src.dist!=null)?src.dist:'';
-  exMinsEl.value=(cardio && src.mins!=null)?src.mins:'';
-  try{ (cardio?exMinsEl:exWeightEl).focus(); }catch(e){}
-  showToast('Adjust, then tap Add exercise');
+  const k=todayKey();
+  const it={name:src.name,group:src.group||null,weight:src.weight!=null?src.weight:null,sets:src.sets!=null?src.sets:null,reps:src.reps!=null?src.reps:null,dist:src.dist!=null?src.dist:null,mins:src.mins!=null?src.mins:null};
+  (exercises[k]=exercises[k]||[]).push(it); DB.set('exercises',exercises); buzz(12);
+  const idx=exercises[k].length-1;
+  updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal(); renderSnapshot();
+  showToast('Added '+it.name+' to today', ()=>{ const a=exercises[k]||[]; a.splice(idx,1); if(!a.length) delete exercises[k]; DB.set('exercises',exercises); updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal(); renderSnapshot(); });
 }
 
 /* edit an entry */
