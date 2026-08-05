@@ -205,6 +205,8 @@
   .cal-n{position:relative;z-index:2}
   .kb-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64%;height:64%;
     border:2px solid #b46bff;border-radius:50%;box-shadow:0 0 6px rgba(180,107,255,.55);z-index:1;pointer-events:none}
+  .cv-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:42%;height:42%;
+    border:2px solid #ff5db1;border-radius:50%;box-shadow:0 0 6px rgba(255,93,177,.55);z-index:1;pointer-events:none}
   .cal-cell.kbonly{border-color:#b46bff;color:#b46bff;box-shadow:0 0 8px rgba(180,107,255,.5),0 0 18px rgba(180,107,255,.22)}
   .cal-cell.today{color:var(--neon2)}
   .cal-cell.today.done{color:#ffb020}
@@ -468,6 +470,7 @@
       </div>
       <button id="exAdd" style="width:100%;margin-top:10px">Add exercise</button>
       <button id="quickBtn" class="ghost" style="width:100%;margin-top:8px">🏋️ Log Kettlebell day</button>
+      <button id="calvesBtn" class="ghost" style="width:100%;margin-top:8px">🦵 Log Calves day</button>
     </div>
 
     <h2 id="addHeading">Today's Exercises</h2>
@@ -587,7 +590,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.50.1</div>
+    <div class="ver-foot" id="verLabel">v1.51.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -653,7 +656,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.50.1';
+const APP_VERSION='1.51.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1266,14 +1269,16 @@ document.getElementById('exAdd').onclick=()=>{
 };
 exRepsEl.addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('exAdd').click(); });
 
-/* log a detail-less Kettlebell day (one tap) */
-document.getElementById('quickBtn').onclick=()=>{
+/* log a detail-less day tag (one tap), e.g. Kettlebell / Calves */
+function logDayTag(name){
   const k=logDate();
-  (exercises[k]=exercises[k]||[]).push({name:'Kettlebell',weight:null,sets:null,reps:null,group:null,dist:null,mins:null});
+  (exercises[k]=exercises[k]||[]).push({name,weight:null,sets:null,reps:null,group:null,dist:null,mins:null});
   DB.set('exercises',exercises); buzz(12);
   updateExNames(); renderExercises(); renderLog(); renderWeeklyGoal();
-  showToast('Kettlebell day logged ✓');
-};
+  showToast(name+' day logged ✓');
+}
+document.getElementById('quickBtn').onclick=()=>logDayTag('Kettlebell');
+document.getElementById('calvesBtn').onclick=()=>logDayTag('Calves');
 
 
 /* exercise history modal */
@@ -1413,9 +1418,10 @@ function renderCalendar(){
     const done=arr.length>0;
     const kbOnly=done && arr.every(it=>norm(it.name).includes('kettlebell'));
     const kbMixed=!kbOnly && arr.some(it=>norm(it.name).includes('kettlebell'));
+    const calves=arr.some(it=>/calf|calv/.test(norm(it.name)));
     const shk=!!shakes[k];
     let cls='cal-cell'+(kbOnly?' kbonly':(done?' done':''))+(kbMixed?' kb':'')+(k===tK?' today':'');
-    h+='<div class="'+cls+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+(kbMixed?'<span class="kb-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+'</div>';
+    h+='<div class="'+cls+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+(kbMixed?'<span class="kb-ring"></span>':'')+(calves?'<span class="cv-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
   box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>{ buzz(6); openDayDetail(el.getAttribute('data-k')); });
