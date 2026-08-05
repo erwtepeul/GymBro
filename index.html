@@ -587,7 +587,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.50.0</div>
+    <div class="ver-foot" id="verLabel">v1.50.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -653,7 +653,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.50.0';
+const APP_VERSION='1.50.1';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1742,13 +1742,7 @@ function renderRecords(){
     tile('🗓️', wkStreak?wkStreak+' wk':'—', 'Longest streak', 'weeks active in a row'),
     tile('🔥', shStreak?shStreak+' d':'—', 'Best shake run', 'days in a row')
   ];
-  const list=Object.values(perEx).filter(r=>r.best1rm>0).sort((a,b)=>b.best1rm-a.best1rm);
-  let html='<div class="stat-grid">'+tiles.join('')+'</div>';
-  if(list.length){
-    html+='<div class="wsum-h" style="margin:16px 4px 6px">Best per exercise</div>'
-      +list.map(r=>'<div class="weekrow"><span class="muted">'+r.name+'</span><span class="kg">'+fmtDec(r.best1rm)+' kg <span style="color:var(--muted);font-weight:600">e1RM</span> · '+fmtDec(r.heaviest)+' kg top</span></div>').join('');
-  }
-  box.innerHTML=html;
+  box.innerHTML='<div class="stat-grid">'+tiles.join('')+'</div>';
 }
 function longestWeekActiveStreak(){
   const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
