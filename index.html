@@ -590,7 +590,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.51.0</div>
+    <div class="ver-foot" id="verLabel">v1.51.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -656,7 +656,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.51.0';
+const APP_VERSION='1.51.1';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -1897,8 +1897,8 @@ function renderLog(){
     if(idx<logFull){
       exercises[day].forEach((it,i)=>{
         const r=document.createElement('div'); r.className='weekrow';
-        const isKb=norm(it.name).includes('kettlebell');
-        if(isKb){
+        const isTag=/kettlebell|calf|calv/.test(norm(it.name));
+        if(isTag){
           r.innerHTML='<span class="muted link" style="padding-left:8px">'+it.name+'</span><span class="kg"><button class="wedit" aria-label="Delete">🗑️</button></span>';
           r.querySelector('.link').onclick=()=>openExerciseHistory(it.name);
           r.querySelector('.wedit').onclick=()=>deleteLogEntry(day,i);
