@@ -265,6 +265,8 @@
   .insight:last-child{border-bottom:none}
   .insight b{color:var(--neon2)}
   .stat-tile .l{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
+  .stat-tile .rec-sub{font-size:10px;font-weight:600;color:var(--muted);margin-top:3px;line-height:1.3}
+  .wsum-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
   .stat-line{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
   .stat-line:last-child{border-bottom:none}
   .stat-line .v{color:var(--neon2);font-weight:900;text-align:right}
@@ -519,6 +521,7 @@
     <div class="dsec" data-sec="proj"><h2>Projections</h2><div class="card"><div id="statProj"></div></div></div>
     <div class="dsec" data-sec="trend"><h2>Volume Trend</h2><div class="card"><div id="statTrend"></div></div></div>
     <div class="dsec" data-sec="heat"><h2>Year Heatmap</h2><div class="card"><div id="statHeat"></div></div></div>
+    <div class="dsec" data-sec="records"><h2>Trophy Case</h2><div class="card"><div id="statRecords"></div></div></div>
     <div class="dsec" data-sec="badges"><h2>Achievements</h2><div class="card"><div id="statBadges"></div></div></div>
     <div class="dsec" data-sec="recap"><h2>Recap</h2>
       <div class="row" style="gap:10px">
@@ -584,7 +587,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.49.2</div>
+    <div class="ver-foot" id="verLabel">v1.50.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -650,7 +653,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.49.2';
+const APP_VERSION='1.50.0';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
@@ -699,7 +702,7 @@ function renderFabSwatches(){
   box.innerHTML=Object.keys(FAB_COLORS).map(k=>'<button class="fabsw'+(k===fabColor?' active':'')+'" data-c="'+k+'" style="background:'+FAB_COLORS[k]+'" aria-label="'+k+'"></button>').join('');
   box.querySelectorAll('.fabsw').forEach(b=>b.onclick=()=>{ fabColor=b.dataset.c; DB.set('fabColor',fabColor); applyFab(); renderFabSwatches(); buzz(6); });
 }
-function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,proj:1,trend:1,heat:1,badges:1,recap:1}; }
+function defaultDash(){ return {week:1,month:1,year:1,muscle:1,insights:1,proj:1,trend:1,heat:1,records:1,badges:1,recap:1}; }
 let dash=Object.assign(defaultDash(), DB.get('dash',{})); // which stats cards show
 let theme=DB.get('theme','neon');            // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
@@ -853,7 +856,7 @@ function renderThemes(){
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); renderWeeklyGoal(); });
 }
-const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
+const DASH_SECS=[['week','📅 This week'],['month','🗓️ This month'],['year','📆 This year'],['muscle','💪 Muscle balance'],['insights','🧠 Insights'],['proj','🎯 Projections'],['trend','📈 Volume trend'],['heat','🟩 Year heatmap'],['records','🏆 Trophy case'],['badges','🏅 Achievements'],['recap','🎬 Recap']];
 function applyDash(){ document.querySelectorAll('#view-stats .dsec').forEach(el=>{ el.style.display = dash[el.dataset.sec]===0?'none':''; }); }
 function renderDash(){
   const b=document.getElementById('dashBody');
@@ -1708,6 +1711,45 @@ const ACHIEVEMENTS=[
   {icon:'🧭',name:'Variety pack',test:m=>m.exercises>=10},
   {icon:'⚖️',name:'On target',test:m=>m.hitGoal}
 ];
+function renderRecords(){
+  const box=document.getElementById('statRecords'); if(!box) return;
+  let heavy=0,heavyName='',heavyDate='', bigVol=0,bigK='', mostCnt=0,mostK='';
+  const perEx={};
+  Object.keys(exercises).forEach(k=>{ const arr=exercises[k]; if(!arr||!arr.length) return;
+    let dayVol=0;
+    if(arr.length>mostCnt){ mostCnt=arr.length; mostK=k; }
+    arr.forEach(it=>{ dayVol+=vol(it);
+      if(it.weight!=null){
+        if(it.weight>heavy){ heavy=it.weight; heavyName=it.name; heavyDate=k; }
+        const nm=norm(it.name), e=e1rm(it);
+        const r=perEx[nm]||(perEx[nm]={name:it.name,heaviest:0,best1rm:0,date:''});
+        if(it.weight>r.heaviest){ r.heaviest=it.weight; r.name=it.name; r.date=k; }
+        if(e!=null && e>r.best1rm){ r.best1rm=e; }
+      } });
+    if(dayVol>bigVol){ bigVol=dayVol; bigK=k; }
+  });
+  let bestWk=0,bestWkMon=null; const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
+  if(days.length){ let mon=mondayOf(new Date(days[0]+'T00:00:00')); const end=mondayOf();
+    while(mon<=end){ const v=weekVolume(mon); if(v>bestWk){ bestWk=v; bestWkMon=new Date(mon); } mon=new Date(mon); mon.setDate(mon.getDate()+7); } }
+  const wkStreak=longestWeekActiveStreak(), shStreak=longestShakeStreak();
+  if(!heavy && !bigVol && !shStreak){ box.innerHTML='<div class="empty">Log some workouts to start earning records 🏆</div>'; return; }
+  const tile=(ic,val,lbl,sub)=>'<div class="stat-tile"><div class="n">'+val+'</div><div class="l">'+ic+' '+lbl+'</div>'+(sub?'<div class="rec-sub">'+sub+'</div>':'')+'</div>';
+  const tiles=[
+    tile('🏋️', heavy?fmtDec(heavy)+' kg':'—', 'Heaviest lift', heavy?heavyName+' · '+prettyDate(heavyDate):''),
+    tile('📅', bigVol?fmtNum(Math.round(bigVol))+' kg':'—', 'Biggest day', bigVol?prettyDate(bigK):''),
+    tile('📈', bestWk?fmtNum(Math.round(bestWk))+' kg':'—', 'Best week', bestWkMon?'Week of '+prettyDate(todayKey(bestWkMon)):''),
+    tile('🔢', mostCnt?mostCnt+'':'—', 'Most in a day', mostCnt?prettyDate(mostK):''),
+    tile('🗓️', wkStreak?wkStreak+' wk':'—', 'Longest streak', 'weeks active in a row'),
+    tile('🔥', shStreak?shStreak+' d':'—', 'Best shake run', 'days in a row')
+  ];
+  const list=Object.values(perEx).filter(r=>r.best1rm>0).sort((a,b)=>b.best1rm-a.best1rm);
+  let html='<div class="stat-grid">'+tiles.join('')+'</div>';
+  if(list.length){
+    html+='<div class="wsum-h" style="margin:16px 4px 6px">Best per exercise</div>'
+      +list.map(r=>'<div class="weekrow"><span class="muted">'+r.name+'</span><span class="kg">'+fmtDec(r.best1rm)+' kg <span style="color:var(--muted);font-weight:600">e1RM</span> · '+fmtDec(r.heaviest)+' kg top</span></div>').join('');
+  }
+  box.innerHTML=html;
+}
 function longestWeekActiveStreak(){
   const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
   if(!days.length) return 0;
@@ -1829,6 +1871,7 @@ function renderStats(){
   renderInsights();
   renderProjections();
   renderHeatmap();
+  renderRecords();
   renderAchievements();
 }
 function deleteLogEntry(day,i){
