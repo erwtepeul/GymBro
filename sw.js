@@ -1,4 +1,4 @@
-const CACHE = 'gymbro-v141';
+const CACHE = 'gymbro-v142';
 const ASSETS = [
   'index.html',
   'manifest.webmanifest',

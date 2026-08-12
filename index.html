@@ -102,6 +102,16 @@
   h2{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);
     margin:22px 4px 10px;font-weight:800}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  /* Appearance: aurora backdrop, frosted cards, display font */
+  #aurora{position:fixed;inset:-25%;z-index:-1;pointer-events:none;opacity:0;transition:opacity .6s ease;filter:blur(70px);
+    background:radial-gradient(38% 38% at 28% 30%, var(--neon), transparent 70%),radial-gradient(42% 42% at 74% 72%, var(--neon2), transparent 70%)}
+  html.aurora-on #aurora{opacity:.16;animation:auroraFloat 22s ease-in-out infinite alternate}
+  @keyframes auroraFloat{0%{transform:translate(-4%,-3%) scale(1)}100%{transform:translate(4%,4%) scale(1.14)}}
+  html.reduce-glow #aurora{display:none}
+  html.glass .card{background:rgba(255,255,255,.05);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:rgba(255,255,255,.10)}
+  .big-num,.wsum .val,.stat-tile .n,.momo-score b,.goalw-count,.goalw-count b,.streak,.rtxt,h2{font-family:var(--fontnum,inherit)}
+  .appx-colors{display:flex;gap:8px;align-items:center}
+  .appx-colors input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;box-shadow:none;cursor:pointer}
   .row{display:flex;gap:10px;align-items:center}
 
   input,select{
@@ -396,6 +406,7 @@
 </style>
 </head>
 <body>
+<div id="aurora" aria-hidden="true"></div>
 <header>
   <div class="brand">
     <svg viewBox="0 0 100 100" aria-hidden="true">
@@ -544,6 +555,16 @@
     <h2>Theme</h2>
     <div class="card"><div class="themes" id="themePicker"></div></div>
 
+    <h2>Appearance</h2>
+    <div class="card">
+      <div class="set-row"><span>🎨 Custom colors</span><span class="val appx-colors"><input type="color" id="custA"><input type="color" id="custB"></span></div>
+      <div class="set-row"><span>🖼️ Background</span><span class="val"><b id="setBg">Dark</b><button id="bgCycle" class="ghost">Change</button></span></div>
+      <div class="set-row"><span>🌌 Aurora glow</span><span class="val"><b id="setAurora">Off</b><button id="auroraToggle" class="ghost">Toggle</button></span></div>
+      <div class="set-row"><span>🔢 Number font</span><span class="val"><b id="setFont">Default</b><button id="fontCycle" class="ghost">Change</button></span></div>
+      <div class="set-row"><span>⬚ Card corners</span><span class="val"><b id="setRound">Default</b><button id="roundCycle" class="ghost">Change</button></span></div>
+      <div class="set-row"><span>❄️ Frosted cards</span><span class="val"><b id="setGlass">Off</b><button id="glassToggle" class="ghost">Toggle</button></span></div>
+    </div>
+
     <h2>Display</h2>
     <div class="card">
       <div class="set-row"><span>✨ Reduce glow</span><span class="val"><b id="setGlow">Off</b><button id="glowToggle" class="ghost">Toggle</button></span></div>
@@ -595,7 +616,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.53.0</div>
+    <div class="ver-foot" id="verLabel">v1.54.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -661,10 +682,10 @@
 </div>
 
 <script>
-const APP_VERSION='1.53.0';
+const APP_VERSION='1.54.0';
 
 /* storage */
-const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,theme:1,groups:1,dash:1};
+const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,showOnThisDay:1,fabColor:1,customA:1,customB:1,bgStyle:1,aurora:1,dispFont:1,cardRound:1,cardGlass:1,theme:1,groups:1,dash:1};
 const DB={
   get(k,d){ try{ return JSON.parse(localStorage.getItem('gymbro_'+k)) ?? d }catch(e){ return d } },
   set(k,v){ localStorage.setItem('gymbro_'+k, JSON.stringify(v)); if(BACKUP_KEYS[k] && typeof scheduleAutoBackup==='function') scheduleAutoBackup(); }
@@ -717,10 +738,42 @@ let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 /* theme */
 const THEMES=[{id:'fuchsia',name:'Fuchsia',a:'#ff2d95',b:'#00e5ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'night',name:'Night',a:'#c8a46a',b:'#8fb0b6'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'mint',name:'Mint',a:'#3ef0a0',b:'#5ad1ff'},{id:'indigo',name:'Indigo',a:'#6366f1',b:'#38bdf8'},{id:'crimson',name:'Crimson',a:'#ff2e50',b:'#ff9db0'},{id:'violet',name:'Violet',a:'#a855f7',b:'#22d3ee'}];
-if(!THEMES.some(t=>t.id===theme)){ theme='fuchsia'; DB.set('theme',theme); }
-function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); }
-applyTheme();
-function applyGlow(){ document.documentElement.classList.toggle('reduce-glow', reduceGlow); }
+/* ---- Appearance customization ---- */
+let customA=DB.get('customA','#ff2d95'), customB=DB.get('customB','#00e5ff');
+let bgStyle=DB.get('bgStyle','dark');       // amoled | dark | tint
+let aurora=DB.get('aurora',false);          // animated backdrop
+let dispFont=DB.get('dispFont','default');  // default | rounded | mono | condensed
+let cardRound=DB.get('cardRound','default');// sharp | default | soft
+let cardGlass=DB.get('cardGlass',false);
+function hexRGB(h){ h=(h||'').replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const n=parseInt(h||'000000',16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function rgba(h,a){ const c=hexRGB(h); return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+function mixHex(h1,h2,t){ const a=hexRGB(h1),b=hexRGB(h2); return '#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join(''); }
+const DISP_FONTS={default:'',rounded:'"ui-rounded","SF Pro Rounded",system-ui,sans-serif',mono:'ui-monospace,"SF Mono",Menlo,Consolas,monospace',condensed:'"Arial Narrow","Roboto Condensed",system-ui,sans-serif'};
+const CARD_ROUND={sharp:'8px',default:'18px',soft:'26px'};
+const BG_LABELS={amoled:'AMOLED',dark:'Dark',tint:'Tinted'};
+const FONT_LABELS={default:'Default',rounded:'Rounded',mono:'Mono',condensed:'Condensed'};
+const ROUND_LABELS={sharp:'Sharp',default:'Default',soft:'Soft'};
+function applyBg(){ const s=document.documentElement.style;
+  if(bgStyle==='amoled'){ s.setProperty('--bg','#000000'); s.setProperty('--bg2','#0a0a12'); s.setProperty('--card','#0c0c14'); s.setProperty('--card2','#14141f'); }
+  else if(bgStyle==='tint'){ const c=getComputedStyle(document.documentElement).getPropertyValue('--neon').trim()||'#ff2d95';
+    s.setProperty('--bg',mixHex('#08080d',c,0.06)); s.setProperty('--bg2',mixHex('#0f0f17',c,0.06)); s.setProperty('--card',mixHex('#15151f',c,0.05)); s.setProperty('--card2',mixHex('#1c1c28',c,0.05)); }
+  else { ['--bg','--bg2','--card','--card2'].forEach(p=>s.removeProperty(p)); } }
+function applyAurora(){ document.documentElement.classList.toggle('aurora-on', aurora && !reduceGlow); }
+function applyFont(){ const f=DISP_FONTS[dispFont]||''; const s=document.documentElement.style; if(f) s.setProperty('--fontnum',f); else s.removeProperty('--fontnum'); }
+function applyCards(){ document.documentElement.style.setProperty('--radius',CARD_ROUND[cardRound]||'18px'); document.documentElement.classList.toggle('glass',cardGlass); }
+if(theme!=='custom' && !THEMES.some(t=>t.id===theme)){ theme='fuchsia'; DB.set('theme',theme); }
+function applyTheme(){ const r=document.documentElement, s=r.style;
+  if(theme==='custom'){ r.setAttribute('data-theme','custom');
+    s.setProperty('--neon',customA); s.setProperty('--neon2',customB);
+    s.setProperty('--glow', reduceGlow?'none':'0 0 12px '+rgba(customA,.55)+', 0 0 26px '+rgba(customA,.25));
+    s.setProperty('--glow-cy', reduceGlow?'none':'0 0 12px '+rgba(customB,.5)+', 0 0 26px '+rgba(customB,.2));
+    s.setProperty('--ga',rgba(customA,.14)); s.setProperty('--gb',rgba(customB,.08)); s.setProperty('--focus',rgba(customA,.15));
+  } else { r.setAttribute('data-theme',theme);
+    ['--neon','--neon2','--glow','--glow-cy','--ga','--gb','--focus'].forEach(p=>s.removeProperty(p)); }
+  applyBg();
+}
+applyTheme(); applyFont(); applyCards(); applyAurora();
+function applyGlow(){ document.documentElement.classList.toggle('reduce-glow', reduceGlow); applyAurora(); if(theme==='custom') applyTheme(); }
 applyGlow();
 
 /* one-time: mark 20 & 21 Jul 2026 as shake days */
@@ -860,7 +913,8 @@ document.getElementById('hgear').onclick=()=>showView('settings');
 /* settings */
 function renderThemes(){
   const box=document.getElementById('themePicker');
-  box.innerHTML=THEMES.map(t=>'<button class="theme-opt'+(t.id===theme?' active':'')+'" data-set="'+t.id+'">'
+  const opts=THEMES.concat([{id:'custom',name:'Custom',a:customA,b:customB}]);
+  box.innerHTML=opts.map(t=>'<button class="theme-opt'+(t.id===theme?' active':'')+'" data-set="'+t.id+'">'
     +'<span class="sw" style="background:linear-gradient(135deg,'+t.a+','+t.b+')"></span>'+t.name+'</button>').join('');
   box.querySelectorAll('.theme-opt').forEach(b=>b.onclick=()=>{ theme=b.dataset.set; DB.set('theme',theme); applyTheme(); renderThemes(); renderWeeklyGoal(); });
 }
@@ -878,6 +932,12 @@ function renderSettings(){
   document.getElementById('setWeeklyVal').textContent=weeklyGoal;
   document.getElementById('setWeeklyKg').textContent=weeklyKg>0?fmtNum(weeklyKg)+' kg':'Auto';
   document.getElementById('setLogFull').textContent=logFull;
+  document.getElementById('setBg').textContent=BG_LABELS[bgStyle];
+  document.getElementById('setAurora').textContent=aurora?'On':'Off';
+  document.getElementById('setFont').textContent=FONT_LABELS[dispFont];
+  document.getElementById('setRound').textContent=ROUND_LABELS[cardRound];
+  document.getElementById('setGlass').textContent=cardGlass?'On':'Off';
+  document.getElementById('custA').value=customA; document.getElementById('custB').value=customB;
   document.getElementById('setGlow').textContent=reduceGlow?'On':'Off';
   document.getElementById('setHaptics').textContent=haptics?'On':'Off';
   document.getElementById('setSound').textContent=sound?'On':'Off';
@@ -892,6 +952,13 @@ function renderSettings(){
 document.getElementById('confettiToggle').onclick=()=>{ snapConfetti=!snapConfetti; DB.set('snapConfetti',snapConfetti); renderSettings(); };
 document.getElementById('todayExToggle').onclick=()=>{ showTodayEx=!showTodayEx; DB.set('showTodayEx',showTodayEx); applyHomeToggles(); renderSettings(); };
 document.getElementById('onThisDayToggle').onclick=()=>{ showOnThisDay=!showOnThisDay; DB.set('showOnThisDay',showOnThisDay); applyHomeToggles(); renderSettings(); };
+document.getElementById('bgCycle').onclick=()=>{ const o=['dark','amoled','tint']; bgStyle=o[(o.indexOf(bgStyle)+1)%o.length]; DB.set('bgStyle',bgStyle); applyBg(); renderSettings(); buzz(6); };
+document.getElementById('auroraToggle').onclick=()=>{ aurora=!aurora; DB.set('aurora',aurora); applyAurora(); renderSettings(); buzz(6); };
+document.getElementById('fontCycle').onclick=()=>{ const o=['default','rounded','mono','condensed']; dispFont=o[(o.indexOf(dispFont)+1)%o.length]; DB.set('dispFont',dispFont); applyFont(); renderSettings(); buzz(6); };
+document.getElementById('roundCycle').onclick=()=>{ const o=['default','sharp','soft']; cardRound=o[(o.indexOf(cardRound)+1)%o.length]; DB.set('cardRound',cardRound); applyCards(); renderSettings(); buzz(6); };
+document.getElementById('glassToggle').onclick=()=>{ cardGlass=!cardGlass; DB.set('cardGlass',cardGlass); applyCards(); renderSettings(); buzz(6); };
+document.getElementById('custA').oninput=(e)=>{ customA=e.target.value; DB.set('customA',customA); theme='custom'; DB.set('theme',theme); applyTheme(); renderThemes(); renderWeeklyGoal(); };
+document.getElementById('custB').oninput=(e)=>{ customB=e.target.value; DB.set('customB',customB); theme='custom'; DB.set('theme',theme); applyTheme(); renderThemes(); renderWeeklyGoal(); };
 document.getElementById('remindToggle').onclick=()=>{
   if(!reminders){ if('Notification' in window){ Notification.requestPermission().then(p=>{ reminders=(p==='granted'); DB.set('reminders',reminders); renderSettings(); if(reminders){ checkReminders(); } else alert('Notification permission was not granted.'); }); } else alert('Notifications are not supported on this device.'); }
   else { reminders=false; DB.set('reminders',reminders); renderSettings(); }
@@ -1924,15 +1991,16 @@ document.getElementById('resetBtn').onclick=()=>{
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
   exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false; showTodayEx=true; showOnThisDay=true; fabColor='teal';
+  bgStyle='dark'; aurora=false; dispFont='default'; cardRound='default'; cardGlass=false;
   groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
-  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('showOnThisDay',showOnThisDay); DB.set('fabColor',fabColor); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
-  applyGlow(); rebuildGroups();
+  DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('showOnThisDay',showOnThisDay); DB.set('fabColor',fabColor); DB.set('bgStyle',bgStyle); DB.set('aurora',aurora); DB.set('dispFont',dispFont); DB.set('cardRound',cardRound); DB.set('cardGlass',cardGlass); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+  applyGlow(); applyTheme(); applyFont(); applyCards(); rebuildGroups();
   updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles(); applyFab();
 };
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,showOnThisDay,fabColor,theme,groups:groupCfg,dash};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,showOnThisDay,fabColor,customA,customB,bgStyle,aurora,dispFont,cardRound,cardGlass,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -2083,11 +2151,18 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.showTodayEx==='boolean') showTodayEx=d.showTodayEx;
       if(typeof d.showOnThisDay==='boolean') showOnThisDay=d.showOnThisDay;
       if(typeof d.fabColor==='string' && FAB_COLORS[d.fabColor]) fabColor=d.fabColor;
-      if(typeof d.theme==='string' && THEMES.some(t=>t.id===d.theme)) theme=d.theme;
+      if(typeof d.customA==='string') customA=d.customA;
+      if(typeof d.customB==='string') customB=d.customB;
+      if(typeof d.bgStyle==='string' && BG_LABELS[d.bgStyle]) bgStyle=d.bgStyle;
+      if(typeof d.aurora==='boolean') aurora=d.aurora;
+      if(typeof d.dispFont==='string' && DISP_FONTS[d.dispFont]!=null) dispFont=d.dispFont;
+      if(typeof d.cardRound==='string' && CARD_ROUND[d.cardRound]) cardRound=d.cardRound;
+      if(typeof d.cardGlass==='boolean') cardGlass=d.cardGlass;
+      if(typeof d.theme==='string' && (d.theme==='custom'||THEMES.some(t=>t.id===d.theme))) theme=d.theme;
       if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
       if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('showOnThisDay',showOnThisDay); DB.set('fabColor',fabColor); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
-      applyTheme(); applyGlow(); rebuildGroups();
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('showOnThisDay',showOnThisDay); DB.set('fabColor',fabColor); DB.set('customA',customA); DB.set('customB',customB); DB.set('bgStyle',bgStyle); DB.set('aurora',aurora); DB.set('dispFont',dispFont); DB.set('cardRound',cardRound); DB.set('cardGlass',cardGlass); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      applyTheme(); applyGlow(); applyFont(); applyCards(); applyFab(); rebuildGroups();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles(); applyFab();
       showToast('Backup imported ✓');
     }catch(err){ alert('Could not read that backup file.'); }
