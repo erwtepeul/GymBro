@@ -50,12 +50,6 @@
     --glow-cy:0 0 12px rgba(56,189,248,.5), 0 0 26px rgba(56,189,248,.2);
     --ga:rgba(99,102,241,.12); --gb:rgba(56,189,248,.08); --focus:rgba(99,102,241,.15);
   }
-  html[data-theme="crimson"]{
-    --neon:#ff2e50; --neon2:#ff9db0;
-    --glow:0 0 12px rgba(255,46,80,.55), 0 0 26px rgba(255,46,80,.25);
-    --glow-cy:0 0 12px rgba(255,157,176,.5), 0 0 26px rgba(255,157,176,.2);
-    --ga:rgba(255,46,80,.12); --gb:rgba(255,157,176,.08); --focus:rgba(255,46,80,.15);
-  }
   html[data-theme="violet"]{
     --neon:#a855f7; --neon2:#22d3ee;
     --glow:0 0 12px rgba(168,85,247,.55), 0 0 26px rgba(168,85,247,.25);
@@ -616,7 +610,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.54.0</div>
+    <div class="ver-foot" id="verLabel">v1.54.1</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -682,7 +676,7 @@
 </div>
 
 <script>
-const APP_VERSION='1.54.0';
+const APP_VERSION='1.54.1';
 
 /* storage */
 const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,showOnThisDay:1,fabColor:1,customA:1,customB:1,bgStyle:1,aurora:1,dispFont:1,cardRound:1,cardGlass:1,theme:1,groups:1,dash:1};
@@ -737,7 +731,7 @@ let theme=DB.get('theme','fuchsia');         // colour scheme
 let calRef=new Date(); calRef.setDate(1);   // month shown on the calendar
 
 /* theme */
-const THEMES=[{id:'fuchsia',name:'Fuchsia',a:'#ff2d95',b:'#00e5ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'night',name:'Night',a:'#c8a46a',b:'#8fb0b6'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'mint',name:'Mint',a:'#3ef0a0',b:'#5ad1ff'},{id:'indigo',name:'Indigo',a:'#6366f1',b:'#38bdf8'},{id:'crimson',name:'Crimson',a:'#ff2e50',b:'#ff9db0'},{id:'violet',name:'Violet',a:'#a855f7',b:'#22d3ee'}];
+const THEMES=[{id:'fuchsia',name:'Fuchsia',a:'#ff2d95',b:'#00e5ff'},{id:'ember',name:'Ember',a:'#ff7a1a',b:'#ffd23f'},{id:'night',name:'Night',a:'#c8a46a',b:'#8fb0b6'},{id:'ocean',name:'Ocean',a:'#0ea5e9',b:'#2dd4bf'},{id:'mint',name:'Mint',a:'#3ef0a0',b:'#5ad1ff'},{id:'indigo',name:'Indigo',a:'#6366f1',b:'#38bdf8'},{id:'violet',name:'Violet',a:'#a855f7',b:'#22d3ee'}];
 /* ---- Appearance customization ---- */
 let customA=DB.get('customA','#ff2d95'), customB=DB.get('customB','#00e5ff');
 let bgStyle=DB.get('bgStyle','dark');       // amoled | dark | tint
