@@ -221,6 +221,8 @@
   .cal-cell.today{color:var(--neon2)}
   .cal-cell.today.done{color:#ffb020}
   .cal-cell.today.kbonly{color:#b46bff}
+  .cal-cell.away:not(.done):not(.kbonly){border-color:var(--muted);border-style:dashed}
+  .cal-away{position:absolute;top:0;right:1px;font-size:8px;line-height:1;color:var(--muted);z-index:2}
   .cal-cell[data-k]{cursor:pointer}
 
   .danger-btn{margin-top:22px;width:100%;background:transparent;color:var(--danger);
@@ -610,7 +612,7 @@
 
     <button id="resetBtn" class="danger-btn">Erase all data</button>
 
-    <div class="ver-foot" id="verLabel">v1.55.0</div>
+    <div class="ver-foot" id="verLabel">v1.56.0</div>
     <div class="copyr">copyright © 2026 erwtepeul. all rights reserved.</div>
   </section>
 </main>
@@ -676,10 +678,10 @@
 </div>
 
 <script>
-const APP_VERSION='1.55.0';
+const APP_VERSION='1.56.0';
 
 /* storage */
-const BACKUP_KEYS={exercises:1,weights:1,shakes:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,showOnThisDay:1,fabColor:1,customA:1,customB:1,bgStyle:1,aurora:1,dispFont:1,cardRound:1,cardGlass:1,theme:1,groups:1,dash:1};
+const BACKUP_KEYS={exercises:1,weights:1,shakes:1,away:1,goal:1,weeklyGoal:1,weeklyKg:1,logFull:1,backupDays:1,reduceGlow:1,haptics:1,sound:1,snapConfetti:1,reminders:1,showTodayEx:1,showOnThisDay:1,fabColor:1,customA:1,customB:1,bgStyle:1,aurora:1,dispFont:1,cardRound:1,cardGlass:1,theme:1,groups:1,dash:1};
 const DB={
   get(k,d){ try{ return JSON.parse(localStorage.getItem('gymbro_'+k)) ?? d }catch(e){ return d } },
   set(k,v){ localStorage.setItem('gymbro_'+k, JSON.stringify(v)); if(BACKUP_KEYS[k] && typeof scheduleAutoBackup==='function') scheduleAutoBackup(); }
@@ -703,6 +705,9 @@ if(localStorage.getItem('gymbro_reset')!==RESET_TOKEN){
 let exercises=DB.get('exercises',{});
 let weights=DB.get('weights',{});
 let shakes=DB.get('shakes',{});
+let away=DB.get('away',{});                   // days abroad/away — bridge streaks
+function isAway(k){ return !!away[k]; }
+function weekAllAway(mon){ for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); if(!away[todayKey(d)]) return false; } return true; }
 let goal=DB.get('goal',75);                  // goal weight in kg
 let weeklyGoal=DB.get('weeklyGoal',3);       // workouts-per-week target
 let weeklyKg=DB.get('weeklyKg',0);           // weekly volume goal in kg (0 = auto)
@@ -961,6 +966,7 @@ document.getElementById('remindToggle').onclick=()=>{
 };
 function checkReminders(){
   if(!reminders || !('Notification' in window) || Notification.permission!=='granted') return;
+  if(isAway(todayKey())) return;   // stay quiet on away days
   const flag='gymbro_remind_'+todayKey(); if(localStorage.getItem(flag)) return;
   const notify=(t,b)=>{ try{ if(navigator.serviceWorker&&navigator.serviceWorker.ready){ navigator.serviceWorker.ready.then(r=>r.showNotification(t,{body:b,icon:'icons/icon-192.png'})); } else new Notification(t,{body:b}); }catch(e){} };
   if(new Date().getDay()===1 && weights[mondayKey()]==null){ notify('GymBro','Time for your Monday weigh-in ⚖️'); localStorage.setItem(flag,'1'); return; }
@@ -1215,7 +1221,7 @@ function weeklyStreak(){
   let streak=0; const mon=mondayOf();
   if(workoutsInWeek(mon)>=weeklyGoal) streak++;
   const prev=new Date(mon); prev.setDate(prev.getDate()-7);
-  while(workoutsInWeek(prev)>=weeklyGoal){ streak++; prev.setDate(prev.getDate()-7); }
+  while(true){ if(workoutsInWeek(prev)>=weeklyGoal){ streak++; } else if(!weekAllAway(prev)){ break; } prev.setDate(prev.getDate()-7); }
   return streak;
 }
 function weekVolume(mon){ let v=0; for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const k=todayKey(d); if(exercises[k]) v+=exercises[k].reduce((s,it)=>s+vol(it),0); } return v; }
@@ -1458,13 +1464,22 @@ function renderWeightChart(){
 
 function openDayDetail(k){
   document.getElementById('exModalTitle').textContent=prettyDate(k);
-  const arr=exercises[k]||[]; let html='<div class="hint" style="margin:0 0 10px">🥤 '+(shakes[k]?'Shake taken':'No shake')+'</div>';
+  const arr=exercises[k]||[]; let html='<div class="hint" style="margin:0 0 10px">🥤 '+(shakes[k]?'Shake taken':'No shake')+(away[k]?' · ✈️ Away day':'')+'</div>';
   if(!arr.length) html+='<div class="empty">No exercises.</div>';
   else html+=arr.map(it=>'<div class="weekrow"><span class="muted link">'+it.name+'</span><span class="kg">'+fmtEntry(it)+'</span></div>').join('');
   const tot=arr.reduce((s,it)=>s+vol(it),0); if(tot>0) html+='<div class="hint" style="text-align:right;margin-top:8px">Total '+fmtNum(tot)+' kg</div>';
+  html+='<button id="awayToggle" class="ghost" style="width:100%;margin-top:14px">'+(away[k]?'✈️ Clear away day':'✈️ Mark as away day')+'</button>';
   const body=document.getElementById('exModalBody'); body.innerHTML=html;
   body.querySelectorAll('.link').forEach((sp,i)=>sp.onclick=()=>openExerciseHistory(arr[i].name));
+  document.getElementById('awayToggle').onclick=()=>toggleAway(k);
   document.getElementById('exModal').hidden=false;
+}
+function toggleAway(k){
+  if(away[k]) delete away[k]; else away[k]=true;
+  DB.set('away',away); buzz(12);
+  renderCalendar(); renderShake(); renderWeeklyGoal();
+  showToast(away[k]?'Marked away — streaks paused ✈️':'Away day cleared');
+  openDayDetail(k);
 }
 function renderCalendar(){
   const box=document.getElementById('logCalendar');
@@ -1488,8 +1503,9 @@ function renderCalendar(){
     const kbMixed=!kbOnly && arr.some(it=>norm(it.name).includes('kettlebell'));
     const calves=arr.some(it=>/calf|calv/.test(norm(it.name)));
     const shk=!!shakes[k];
-    let cls='cal-cell'+(kbOnly?' kbonly':(done?' done':''))+(kbMixed?' kb':'')+(k===tK?' today':'');
-    h+='<div class="'+cls+'"'+((done||shk)?' data-k="'+k+'"':'')+'>'+(kbMixed?'<span class="kb-ring"></span>':'')+(calves?'<span class="cv-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+'</div>';
+    const awy=!!away[k];
+    let cls='cal-cell'+(kbOnly?' kbonly':(done?' done':''))+(kbMixed?' kb':'')+(awy?' away':'')+(k===tK?' today':'');
+    h+='<div class="'+cls+'" data-k="'+k+'">'+(kbMixed?'<span class="kb-ring"></span>':'')+(calves?'<span class="cv-ring"></span>':'')+'<span class="cal-n">'+d+'</span>'+(shk?'<span class="cal-dot"></span>':'')+(awy?'<span class="cal-away">✈</span>':'')+'</div>';
   }
   box.innerHTML=h+'</div>';
   box.querySelectorAll('.cal-cell[data-k]').forEach(el=>el.onclick=()=>{ buzz(6); openDayDetail(el.getAttribute('data-k')); });
@@ -1569,13 +1585,15 @@ function renderWeekSummary(){
 function isKettlebellDay(k){ return exercises[k] && exercises[k].some(it=>norm(it.name).includes('kettlebell')); }
 
 /* stats page helpers */
-function currentShakeStreak(){ let s=0,d=new Date(); if(!shakes[todayKey(d)]) d.setDate(d.getDate()-1); while(shakes[todayKey(d)]){ s++; d.setDate(d.getDate()-1);} return s; }
+function currentShakeStreak(){ let s=0,d=new Date(); const tk=todayKey(d);
+  if(!shakes[tk] && !away[tk]) d.setDate(d.getDate()-1);
+  while(true){ const k=todayKey(d); if(shakes[k]) s++; else if(!away[k]) break; d.setDate(d.getDate()-1); }
+  return s; }
 function longestShakeStreak(){
   const days=Object.keys(shakes).filter(k=>shakes[k]).sort();
   if(!days.length) return 0;
-  let best=1,cur=1;
-  for(let i=1;i<days.length;i++){ const p=new Date(days[i-1]+'T00:00:00'); p.setDate(p.getDate()+1);
-    if(todayKey(p)===days[i]){ cur++; best=Math.max(best,cur);} else cur=1; }
+  let best=0,cur=0; let d=new Date(days[0]+'T00:00:00'); const end=todayKey();
+  while(todayKey(d)<=end){ const k=todayKey(d); if(shakes[k]){ cur++; best=Math.max(best,cur); } else if(!away[k]){ cur=0; } d.setDate(d.getDate()+1); }
   return best;
 }
 function longestWeeklyStreak(){
@@ -1822,7 +1840,7 @@ function longestWeekActiveStreak(){
   const days=Object.keys(exercises).filter(k=>exercises[k]&&exercises[k].length).sort();
   if(!days.length) return 0;
   let mon=mondayOf(new Date(days[0]+'T00:00:00')); const end=mondayOf(); let best=0,cur=0;
-  while(mon<=end){ if(workoutsInWeek(mon)>=1){ cur++; best=Math.max(best,cur);} else cur=0; mon=new Date(mon); mon.setDate(mon.getDate()+7); }
+  while(mon<=end){ if(workoutsInWeek(mon)>=1){ cur++; best=Math.max(best,cur);} else if(!weekAllAway(mon)){ cur=0; } mon=new Date(mon); mon.setDate(mon.getDate()+7); }
   return best;
 }
 function computeMetrics(){
@@ -1986,7 +2004,7 @@ document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Erase all data? This deletes every weigh-in, exercise, and shake. This cannot be undone.')) return;
   Object.keys(localStorage).filter(k=>k.startsWith('gymbro_')&&k!=='gymbro_reset').forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('gymbro_filltest-v1','done'); localStorage.setItem('gymbro_shakeseed-20260720-21','done');
-  exercises={}; weights={}; shakes={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false; showTodayEx=true; showOnThisDay=true; fabColor='teal';
+  exercises={}; weights={}; shakes={}; away={}; goal=75; weeklyGoal=3; weeklyKg=0; logFull=5; backupDays=7; reduceGlow=false; haptics=true; sound=false; snapConfetti=true; reminders=false; showTodayEx=true; showOnThisDay=true; fabColor='teal';
   bgStyle='dark'; aurora=false; dispFont='default'; cardRound='default'; cardGlass=false;
   groupCfg=DEFAULT_GROUPS.slice(); dash=defaultDash();
   DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('showOnThisDay',showOnThisDay); DB.set('fabColor',fabColor); DB.set('bgStyle',bgStyle); DB.set('aurora',aurora); DB.set('dispFont',dispFont); DB.set('cardRound',cardRound); DB.set('cardGlass',cardGlass); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
@@ -1996,7 +2014,7 @@ document.getElementById('resetBtn').onclick=()=>{
 
 /* backup: export / import */
 function exportData(){
-  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,showOnThisDay,fabColor,customA,customB,bgStyle,aurora,dispFont,cardRound,cardGlass,theme,groups:groupCfg,dash};
+  const data={app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,away,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,showOnThisDay,fabColor,customA,customB,bgStyle,aurora,dispFont,cardRound,cardGlass,theme,groups:groupCfg,dash};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='gymbro-backup-'+todayKey()+'.json';
@@ -2053,7 +2071,7 @@ const IDB={
   async get(k){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readonly'); const rq=t.objectStore('kv').get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); },
   async del(k){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').delete(k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
 };
-function backupPayload(){ return JSON.stringify({app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,theme,groups:groupCfg,dash},null,2); }
+function backupPayload(){ return JSON.stringify({app:'GymBro',version:APP_VERSION,exportedAt:new Date().toISOString(),exercises,weights,shakes,away,goal,weeklyGoal,weeklyKg,logFull,backupDays,reduceGlow,haptics,sound,snapConfetti,reminders,showTodayEx,theme,groups:groupCfg,dash},null,2); }
 async function hasPerm(h,ask){ const o={mode:'readwrite'}; if((await h.queryPermission(o))==='granted') return true; if(ask && (await h.requestPermission(o))==='granted') return true; return false; }
 async function writeAutoBackup(ask){
   if(!autoHandle) return false;
@@ -2134,6 +2152,7 @@ document.getElementById('importFile').onchange=e=>{
       exercises=(d.exercises&&typeof d.exercises==='object')?d.exercises:{};
       weights=(d.weights&&typeof d.weights==='object')?d.weights:{};
       shakes=(d.shakes&&typeof d.shakes==='object')?d.shakes:{};
+      away=(d.away&&typeof d.away==='object')?d.away:{};
       if(typeof d.goal==='number' && d.goal>0) goal=d.goal;
       if(typeof d.weeklyGoal==='number' && d.weeklyGoal>0) weeklyGoal=d.weeklyGoal;
       if(typeof d.weeklyKg==='number' && d.weeklyKg>=0) weeklyKg=d.weeklyKg;
@@ -2157,7 +2176,7 @@ document.getElementById('importFile').onchange=e=>{
       if(typeof d.theme==='string' && (d.theme==='custom'||THEMES.some(t=>t.id===d.theme))) theme=d.theme;
       if(Array.isArray(d.groups)&&d.groups.length) groupCfg=d.groups;
       if(d.dash&&typeof d.dash==='object') dash=Object.assign({},dash,d.dash);
-      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('showOnThisDay',showOnThisDay); DB.set('fabColor',fabColor); DB.set('customA',customA); DB.set('customB',customB); DB.set('bgStyle',bgStyle); DB.set('aurora',aurora); DB.set('dispFont',dispFont); DB.set('cardRound',cardRound); DB.set('cardGlass',cardGlass); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
+      DB.set('exercises',exercises); DB.set('weights',weights); DB.set('shakes',shakes); DB.set('away',away); DB.set('goal',goal); DB.set('weeklyGoal',weeklyGoal); DB.set('weeklyKg',weeklyKg); DB.set('logFull',logFull); DB.set('backupDays',backupDays); DB.set('reduceGlow',reduceGlow); DB.set('haptics',haptics); DB.set('sound',sound); DB.set('snapConfetti',snapConfetti); DB.set('reminders',reminders); DB.set('showTodayEx',showTodayEx); DB.set('showOnThisDay',showOnThisDay); DB.set('fabColor',fabColor); DB.set('customA',customA); DB.set('customB',customB); DB.set('bgStyle',bgStyle); DB.set('aurora',aurora); DB.set('dispFont',dispFont); DB.set('cardRound',cardRound); DB.set('cardGlass',cardGlass); DB.set('theme',theme); DB.set('groups',groupCfg); DB.set('dash',dash);
       applyTheme(); applyGlow(); applyFont(); applyCards(); applyFab(); rebuildGroups();
       updateExNames(); renderShake(); renderExercises(); renderWeight(); renderLog(); renderWeeklyGoal(); updateBackupBanner(); applyHomeToggles(); applyFab();
       showToast('Backup imported ✓');

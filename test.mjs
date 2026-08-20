@@ -24,17 +24,17 @@ function extract(name) {
   return script.slice(start, i);
 }
 
-const NAMES = ['todayKey','mondayOf','vol','e1rm','workoutsInWeek','weekVolume',
+const NAMES = ['todayKey','mondayOf','vol','e1rm','workoutsInWeek','weekVolume','weekAllAway',
   'weeklyStreak','currentShakeStreak','volWin','momoLevel','computeMomentum'];
 
 // Assemble the functions into one scope that shares mutable app state.
 const factory = new Function(`
-  let exercises={}, weights={}, shakes={}, weeklyGoal=3, weeklyKg=0;
+  let exercises={}, weights={}, shakes={}, away={}, weeklyGoal=3, weeklyKg=0;
   ${NAMES.map(extract).join('\n')}
   return {
     set:(o={})=>{ if(o.exercises)exercises=o.exercises; if(o.weights)weights=o.weights;
-      if(o.shakes)shakes=o.shakes; if('weeklyGoal'in o)weeklyGoal=o.weeklyGoal; if('weeklyKg'in o)weeklyKg=o.weeklyKg; },
-    reset:()=>{ exercises={}; weights={}; shakes={}; weeklyGoal=3; weeklyKg=0; },
+      if(o.shakes)shakes=o.shakes; if(o.away)away=o.away; if('weeklyGoal'in o)weeklyGoal=o.weeklyGoal; if('weeklyKg'in o)weeklyKg=o.weeklyKg; },
+    reset:()=>{ exercises={}; weights={}; shakes={}; away={}; weeklyGoal=3; weeklyKg=0; },
     fns:{ ${NAMES.join(', ')} }
   };
 `);
@@ -137,6 +137,18 @@ test('currentShakeStreak is 0 with a gap', ()=>{
   M.reset();
   M.set({ shakes:{ [dayAgo(3)]:true, [dayAgo(4)]:true } });
   eq(F.currentShakeStreak(), 0);
+});
+test('away days bridge the shake streak (do not break, do not count)', ()=>{
+  M.reset();
+  // shake today & yesterday, 2 days ago away, then shakes before that
+  M.set({ shakes:{ [dayAgo(0)]:true, [dayAgo(1)]:true, [dayAgo(3)]:true, [dayAgo(4)]:true },
+          away:{ [dayAgo(2)]:true } });
+  eq(F.currentShakeStreak(), 4); // 4 shakes counted, the away gap bridged
+});
+test('a missing non-away day still breaks the shake streak', ()=>{
+  M.reset();
+  M.set({ shakes:{ [dayAgo(0)]:true, [dayAgo(1)]:true, [dayAgo(3)]:true } }); // day 2 missing, not away
+  eq(F.currentShakeStreak(), 2);
 });
 
 // ---- momentum ----
